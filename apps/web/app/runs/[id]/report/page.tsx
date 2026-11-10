@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getInstallation, getPlan, getRun, listAttempts, listScenarioResults, type PlainResult, type ScenarioRow } from "@paypal-checkout-integrator/shared";
-import { PLAIN_SCENARIOS } from "@/lib/plain";
-import { Status } from "@/components/Status";
+import { Badge, ScenarioTiles, ScoreRing } from "@/components/app/Visuals";
+import { Icon } from "@/components/landing/Icons";
+import { statusLabel } from "@/components/Status";
 import { duration, ensureDb, formatDate, publicUrl } from "@/lib/server";
 
 export const dynamic = "force-dynamic";
@@ -73,33 +74,45 @@ function SideBySide({ s }: { s: ScenarioRow }) {
   );
 }
 
-function PayPalApi({ order }: { order: PayPalOrderEvidence }) {
+/** PayPal's own record of the purchase, drawn as a receipt. */
+function Receipt({ order }: { order: PayPalOrderEvidence }) {
   const capture = order.captures?.[0];
   return (
-    <dl className="details">
-      <dt>Order</dt>
-      <dd>
-        <code>{order.id}</code> · <strong>{order.status}</strong>
-      </dd>
-      <dt>Amount</dt>
-      <dd>
-        {order.amount?.value} {order.amount?.currency_code}
-      </dd>
+    <div className="receipt">
+      <div className="receipt-head">
+        <Icon name="receipt" size={22} />
+        <strong>PayPal&apos;s record</strong>
+        <span style={{ marginLeft: "auto" }}>
+          <Badge status={order.status === "COMPLETED" ? "passed" : "failed"}>{order.status}</Badge>
+        </span>
+      </div>
+      <div className="receipt-row">
+        <span>Order</span>
+        <code>{order.id}</code>
+      </div>
+      {(order.items ?? []).map((i) => (
+        <div className="receipt-row" key={i.name}>
+          <span>
+            {i.quantity} × {i.name}
+          </span>
+          <span>{i.unitAmount.value}</span>
+        </div>
+      ))}
       {capture && (
-        <>
-          <dt>Capture</dt>
-          <dd>
-            <code>{capture.id}</code> · <strong>{capture.status}</strong> · {capture.amount.value} {capture.amount.currency_code}
-          </dd>
-        </>
+        <div className="receipt-row">
+          <span>Capture</span>
+          <span>
+            <code>{capture.id}</code> · {capture.status}
+          </span>
+        </div>
       )}
-      {order.items && (
-        <>
-          <dt>Line items</dt>
-          <dd>{order.items.map((i) => `${i.quantity} × ${i.name} at ${i.unitAmount.value}`).join(" · ")}</dd>
-        </>
-      )}
-    </dl>
+      <div className="receipt-row receipt-total">
+        <span>Total charged</span>
+        <span>
+          {capture?.amount.value ?? order.amount?.value} {capture?.amount.currency_code ?? order.amount?.currency_code}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -117,36 +130,49 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
   const firstPurchase = scenarios.find((s) => s.scenario === 1) ?? scenarios[0];
   const paypalOrder = (firstPurchase?.api_evidence as { paypalOrder?: PayPalOrderEvidence } | null)?.paypalOrder;
   const filePlan = plan?.file_plan as { files: { path: string; action: string }[] } | undefined;
-  const base = publicUrl();
   const allPassed = total > 0 && passed === total;
   const sha = run.commit_sha?.slice(0, 7);
 
   return (
     <>
-      <p className="kicker">Run report · {inst?.repo_full_name}</p>
-      <h1>{run.kind === "add_paypal" ? "PayPal checkout, added and proven in the PayPal sandbox" : `PayPal checkout check on pull request #${run.pr_number}`}</h1>
-
-      {total > 0 ? (
-        <>
-          <div className="big-number">
-            {passed} <span className="of">of {total} scenarios passed</span>
-          </div>
+      <div className="app-hero">
+        <div>
+          <p className="kicker">Run report · {inst?.repo_full_name}</p>
+          <h1>{run.kind === "add_paypal" ? "PayPal checkout, added and proven in the PayPal sandbox" : `PayPal checkout check on pull request #${run.pr_number}`}</h1>
           <p className="finding">
-            {allPassed
-              ? `A sandbox buyer completed ${purchases} PayPal checkouts${sha ? ` on commit ${sha}` : ""}. PayPal's API confirmed each result, and the database rows matched the same carts bought through Stripe.`
-              : `${total - passed} scenario${total - passed === 1 ? "" : "s"} failed${sha ? ` on commit ${sha}` : ""}. The failing checks and their evidence are below.`}
+            {total === 0
+              ? `This run has no scenario results yet. Status: ${statusLabel(run.status)}.`
+              : allPassed
+                ? `A sandbox buyer completed ${purchases} PayPal checkouts${sha ? ` on commit ${sha}` : ""}. PayPal's API confirmed each result, and the database rows matched the same carts bought through Stripe.`
+                : `${total - passed} scenario${total - passed === 1 ? "" : "s"} failed${sha ? ` on commit ${sha}` : ""}. The failing checks and their evidence are below.`}
           </p>
-        </>
-      ) : (
-        <p className="finding">
-          This run has no scenario results yet. Status: <Status value={run.status} />.
-        </p>
-      )}
+          <div className="fact-strip">
+            <span>
+              <Icon name="clock" size={16} /> {formatDate(run.started_at ?? run.created_at)} · {duration(run.started_at, run.finished_at)}
+            </span>
+            {run.pr_url && (
+              <span>
+                <Icon name="github" size={16} /> <a href={run.pr_url}>Pull request #{run.pr_number}</a>
+              </span>
+            )}
+            <span>
+              <Icon name="shield" size={16} /> Decided by PayPal&apos;s API and deterministic checks, not the AI
+            </span>
+          </div>
+        </div>
+        {total > 0 && (
+          <div className="app-hero-art">
+            <ScoreRing passed={passed} total={total} label="scenarios" size={156} />
+          </div>
+        )}
+      </div>
 
       {summary.plain && (
         <section className="section selected">
           <p className="kicker teal">In plain English, explained by AI</p>
-          <p className="finding" style={{ marginTop: 0 }}>{summary.plain.headline}</p>
+          <p className="finding" style={{ marginTop: 0 }}>
+            {summary.plain.headline}
+          </p>
           <p className="lede">{summary.plain.whatThisMeans}</p>
           {summary.plain.nextSteps.length > 0 && (
             <ul className="plain-list">
@@ -158,88 +184,36 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
         </section>
       )}
 
-      <dl className="details" style={{ marginTop: 20 }}>
-        <dt>Run</dt>
-        <dd>
-          {formatDate(run.started_at ?? run.created_at)} · {duration(run.started_at, run.finished_at)}
-        </dd>
-        {run.pr_url && (
-          <>
-            <dt>Pull request</dt>
-            <dd>
-              <a href={run.pr_url}>#{run.pr_number}</a>
-            </dd>
-          </>
-        )}
-        <dt>Decided by</dt>
-        <dd>PayPal&apos;s Orders and Payments API, the store&apos;s database, and deterministic checks. Not the AI.</dd>
-      </dl>
-
       {total > 0 && (
         <section className="section">
-          <h2>Scenarios</h2>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Scenario</th>
-                  <th>Result</th>
-                  <th>PayPal order</th>
-                  <th>Evidence</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scenarios.map((s) => {
-                  const failed = s.checks.filter((c) => !c.pass);
-                  return (
-                    <tr key={s.scenario}>
-                      <td>{s.scenario}</td>
-                      <td>
-                        {s.name}
-                        {PLAIN_SCENARIOS[s.scenario] && <div className="small muted">{PLAIN_SCENARIOS[s.scenario]}</div>}
-                        {(failed.length > 0 || s.error) && <div className="small fail">{s.error ?? failed.map((c) => c.name).join("; ")}</div>}
-                        {s.status === "skipped" && s.notes?.[0] && <div className="small muted">{s.notes[0]}</div>}
-                      </td>
-                      <td>
-                        <Status value={s.status} />
-                        <div className="small muted">
-                          {s.checks.filter((c) => c.pass).length} of {s.checks.length} checks
-                        </div>
-                      </td>
-                      <td>{s.paypal_order_id ? <code>{s.paypal_order_id}</code> : ""}</td>
-                      <td className="small">
-                        {s.video_url && <a href={s.video_url}>Video</a>}
-                        {s.video_url && s.trace_url && " · "}
-                        {s.trace_url && <a href={`https://trace.playwright.dev/?trace=${encodeURIComponent(`${base}${s.trace_url}`)}`}>Trace</a>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <p className="kicker">Scenarios</p>
+          <h2>{total === 9 ? "Nine ways a real checkout can go wrong, each tried for real" : "Each scenario, tried for real"}</h2>
+          <ScenarioTiles rows={scenarios} developer traceBase={publicUrl()} />
+        </section>
+      )}
+
+      {(firstPurchase?.video_url || paypalOrder) && (
+        <section className="section">
+          <p className="kicker">Proof</p>
+          <h2>The purchase, recorded, and PayPal&apos;s own record of it</h2>
+          <p className="lede">
+            Scenario {firstPurchase?.scenario}: the harness adds to cart, opens PayPal, logs in as the sandbox buyer, and pays. Then it calls GET /v2/checkout/orders/{paypalOrder?.id ?? "{id}"}{" "}
+            to confirm.
+          </p>
+          <div className="split" style={{ marginTop: 18 }}>
+            {firstPurchase?.video_url && (
+              <div className="video-frame">
+                <video src={`${firstPurchase.video_url}#t=4`} controls muted playsInline preload="metadata" />
+              </div>
+            )}
+            {paypalOrder && <Receipt order={paypalOrder} />}
           </div>
-        </section>
-      )}
-
-      {firstPurchase?.video_url && (
-        <section className="section">
-          <h2>The purchase, recorded</h2>
-          <p className="lede">Scenario {firstPurchase.scenario}: the harness adds to cart, opens PayPal, logs in as the sandbox buyer, and pays.</p>
-          <video src={firstPurchase.video_url} controls preload="metadata" />
-        </section>
-      )}
-
-      {paypalOrder && (
-        <section className="section">
-          <h2>What PayPal&apos;s API returned</h2>
-          <p className="lede">GET /v2/checkout/orders/{paypalOrder.id}, called by the harness after the purchase.</p>
-          <PayPalApi order={paypalOrder} />
         </section>
       )}
 
       {primary && (
         <section className="section">
+          <p className="kicker">Parity with Stripe</p>
           <h2>Stripe and PayPal, side by side</h2>
           <p className="finding">
             {primary.parity_diff?.length
@@ -255,11 +229,18 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
 
       {run.kind === "add_paypal" && (summary.commits?.length || filePlan) && (
         <section className="section">
+          <p className="kicker">The code</p>
           <h2>What changed</h2>
           {summary.planSummary && (
             <>
               <p className="kicker teal">Summary written by the agent</p>
-              <p className="lede">{summary.planSummary}</p>
+              <p className="lede">{summary.planSummary.length > 420 ? `${summary.planSummary.slice(0, 420).trimEnd()}…` : summary.planSummary}</p>
+              {summary.planSummary.length > 420 && (
+                <details className="more">
+                  <summary>Read the agent&apos;s full summary</summary>
+                  <p className="lede small">{summary.planSummary}</p>
+                </details>
+              )}
             </>
           )}
           <div className="grid-2" style={{ marginTop: 16 }}>
@@ -319,6 +300,7 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
       )}
 
       <section className="section">
+        <p className="kicker">Honest limits</p>
         <h2>What we couldn&apos;t verify</h2>
         <ul>
           {(summary.couldNotVerify?.length ? summary.couldNotVerify : ["Nothing beyond the scenarios above."]).map((c) => (

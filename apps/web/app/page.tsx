@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { getGithubApp, getSandboxSettings, listRuns, one } from "@paypal-checkout-integrator/shared";
 import { Landing } from "@/components/Landing";
-import { kindLabel, Status } from "@/components/Status";
+import { Badge, ScoreRing, StoreMock } from "@/components/app/Visuals";
+import { Icon } from "@/components/landing/Icons";
+import { kindLabel, statusLabel } from "@/components/Status";
 import { currentUser, userStores } from "@/lib/auth";
 import { PLAIN_STATUS } from "@/lib/plain";
 import { ensureDb, formatDate } from "@/lib/server";
@@ -30,91 +32,115 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   const [view, app, stores] = await Promise.all([currentView(), getGithubApp(), userStores(user)]);
   const rows = await Promise.all(
-    stores.map(async (inst) => ({ inst, settings: await getSandboxSettings(inst.id), latest: (await listRuns(inst.id, 1))[0] ?? null })),
+    stores.map(async (inst) => {
+      const [settings, runs] = await Promise.all([getSandboxSettings(inst.id), listRuns(inst.id, 20)]);
+      return { inst, settings, latest: runs[0] ?? null, added: runs.some((r) => r.kind === "add_paypal" && r.status === "passed") };
+    }),
   );
   const installUrl = app?.html_url ? `${app.html_url}/installations/new` : null;
   const simple = view === "simple";
+  const withPayPal = rows.filter((r) => r.added).length;
+
+  const connect = (
+    <div className="actions">
+      {installUrl && (
+        <a className="btn btn-lg" href={installUrl}>
+          <Icon name="plus" size={18} /> {simple ? "Connect a store" : "Install on a repository"}
+        </a>
+      )}
+      <form action={syncInstallationsAction}>
+        <button className="btn btn-lg secondary" type="submit">
+          {simple ? "I connected a store, refresh" : "Refresh from GitHub"}
+        </button>
+      </form>
+    </div>
+  );
 
   return (
     <>
-      <p className="kicker">{simple ? "My stores" : "Repositories"}</p>
-      <h1>{simple ? `Welcome, ${user.name ?? user.login}` : "Repositories you can add PayPal to"}</h1>
-      <div className="big-number">
-        {stores.length} <span className="of">{simple ? (stores.length === 1 ? "store connected" : "stores connected") : stores.length === 1 ? "repository connected" : "repositories connected"}</span>
-      </div>
-      <p className="finding">
-        {stores.length
-          ? simple
-            ? "Choose a store to add PayPal checkout or see its latest test results."
-            : "Pick a repository to set its sandbox credentials and start the PayPal integration."
-          : simple
-            ? "Connect the store you want PayPal on. GitHub will ask which store (repository) to share with us."
-            : "Install the GitHub App on a repository to see it here."}
-      </p>
-      <div className="actions">
-        {installUrl && (
-          <a className="btn" href={installUrl}>
-            {simple ? "Connect a store" : "Install on a repository"}
-          </a>
+      <div className="app-hero">
+        <div>
+          <p className="kicker">{simple ? "My stores" : "Repositories"}</p>
+          <h1>{simple ? `Welcome, ${user.name ?? user.login}` : "Repositories you can add PayPal to"}</h1>
+          <p className="finding">
+            {stores.length
+              ? simple
+                ? "Choose a store to add PayPal checkout or see its latest test results."
+                : "Pick a repository to set its sandbox credentials and start the PayPal integration."
+              : simple
+                ? "Connect the store you want PayPal on. GitHub will ask which store (repository) to share with us."
+                : "Install the GitHub App on a repository to see it here."}
+          </p>
+          {stores.length > 0 && connect}
+        </div>
+        {stores.length > 0 && (
+          <div className="app-hero-art">
+            <ScoreRing passed={withPayPal} total={stores.length} label={simple ? "have PayPal" : "integrated"} />
+          </div>
         )}
-        <form action={syncInstallationsAction}>
-          <button className="btn secondary" type="submit">
-            {simple ? "I connected a store, refresh" : "Refresh from GitHub"}
-          </button>
-        </form>
       </div>
 
-      {rows.map(({ inst, settings, latest }) => (
-        <section key={inst.id} className="section">
-          <div className="grid-3">
+      {stores.length === 0 && (
+        <section className="section">
+          <div className="empty">
+            <StoreMock name="your-store" hasPayPal={false} />
             <div>
-              <h2>
-                <Link href={`/repos/${inst.id}`}>{simple ? inst.repo_full_name.split("/")[1] : inst.repo_full_name}</Link>
-              </h2>
-              <p className="muted small">{simple ? `On GitHub as ${inst.repo_full_name}` : `Default branch ${inst.default_branch}`}</p>
+              <h2>{simple ? "Let's connect your first store" : "No repositories yet"}</h2>
+              <p className="lede">
+                {simple
+                  ? "Your store's code lives on GitHub. Click Connect a store, pick the repository, and come back here. Nothing changes on your store until you approve a plan."
+                  : "Install the GitHub App on the repository that holds the Next.js store, then refresh."}
+              </p>
+              {connect}
             </div>
-            <dl className="details">
-              <dt>{simple ? "PayPal test account" : "Sandbox"}</dt>
-              <dd>
-                {settings.configured
-                  ? simple
-                    ? "Connected"
-                    : "Credentials set for this repository"
-                  : simple
-                    ? "Using our demo test account"
-                    : "Using the worker's default sandbox credentials"}
-              </dd>
-              {!simple && (
-                <>
-                  <dt>App folder</dt>
-                  <dd>
-                    <code>{settings.appDir}</code>
-                  </dd>
-                </>
-              )}
-            </dl>
-            <dl className="details">
-              <dt>{simple ? "Latest" : "Latest run"}</dt>
-              <dd>
-                {latest ? (
-                  <Link href={`/runs/${latest.id}`}>
-                    {simple ? (latest.kind === "add_paypal" ? "Adding PayPal" : "Re-test of a change") : kindLabel(latest.kind)}:{" "}
-                    {simple ? <span className={latest.status === "passed" ? "pass" : latest.status === "failed" || latest.status === "error" ? "fail" : "skipped"}>{PLAIN_STATUS[latest.status] ?? latest.status}</span> : <Status value={latest.status} />}
-                  </Link>
-                ) : (
-                  <span className="muted">{simple ? "Nothing yet" : "None yet"}</span>
-                )}
-              </dd>
-              {latest && (
-                <>
-                  <dt>When</dt>
-                  <dd>{formatDate(latest.created_at)}</dd>
-                </>
-              )}
-            </dl>
           </div>
         </section>
-      ))}
+      )}
+
+      <div className="store-grid">
+        {rows.map(({ inst, settings, latest, added }) => {
+          const name = inst.repo_full_name.split("/")[1];
+          return (
+            <div key={inst.id} className="store-card">
+              <StoreMock name={name} hasPayPal={added} compact />
+              <div>
+                <h2>
+                  <Link href={`/repos/${inst.id}`}>{simple ? name : inst.repo_full_name}</Link>
+                </h2>
+                <p className="muted small" style={{ margin: 0 }}>
+                  {simple ? `On GitHub as ${inst.repo_full_name}` : `Default branch ${inst.default_branch} · app folder ${settings.appDir}`}
+                </p>
+                <ul className="facts">
+                  <li>
+                    <Icon name="store" size={16} />
+                    {added ? <Badge status="passed">{simple ? "PayPal added" : "Integrated"}</Badge> : <Badge status="neutral">{simple ? "No PayPal yet" : "Not integrated"}</Badge>}
+                  </li>
+                  <li>
+                    <Icon name="lock" size={16} />
+                    {settings.configured ? (simple ? "Your PayPal test account" : "Own sandbox credentials") : simple ? "Using our demo test account" : "Worker's default sandbox credentials"}
+                  </li>
+                  <li>
+                    <Icon name="pulse" size={16} />
+                    {latest ? (
+                      <Link href={`/runs/${latest.id}`}>
+                        <Badge status={latest.status}>
+                          {simple ? (latest.kind === "add_paypal" ? "Adding PayPal" : `Change #${latest.pr_number}`) : kindLabel(latest.kind)}: {simple ? (PLAIN_STATUS[latest.status] ?? latest.status) : statusLabel(latest.status)}
+                        </Badge>
+                      </Link>
+                    ) : (
+                      <span className="muted">{simple ? "Nothing yet" : "No runs yet"}</span>
+                    )}
+                    {latest && <span className="muted small">{formatDate(latest.created_at)}</span>}
+                  </li>
+                </ul>
+                <Link className="btn" href={`/repos/${inst.id}`}>
+                  {simple ? (added ? "Open store" : "Add PayPal") : "Open"} <Icon name="arrow" size={16} />
+                </Link>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }

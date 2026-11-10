@@ -6,6 +6,7 @@ import { currentUser, isOperator } from "@/lib/auth";
 import { currentView } from "@/lib/view";
 import "./globals.css";
 import "./landing.css";
+import "./app.css";
 
 export const metadata: Metadata = {
   title: { default: "PayPal Checkout Integrator · Chui Labs", template: "%s · PayPal Checkout Integrator · Chui Labs" },

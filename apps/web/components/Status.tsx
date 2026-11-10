@@ -20,3 +20,7 @@ export function Status({ value }: { value: string }) {
 export function kindLabel(kind: string) {
   return kind === "add_paypal" ? "Add PayPal" : "PR check";
 }
+
+export function statusLabel(value: string) {
+  return LABELS[value] ?? value;
+}

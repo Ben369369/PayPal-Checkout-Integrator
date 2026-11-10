@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getInstallation, getSandboxSettings, listRuns, type Run } from "@paypal-checkout-integrator/shared";
-import { kindLabel, Status } from "@/components/Status";
+import { Badge, StoreMock } from "@/components/app/Visuals";
+import { Icon } from "@/components/landing/Icons";
+import { kindLabel, statusLabel } from "@/components/Status";
 import { canAccess, requireUser } from "@/lib/auth";
 import { PLAIN_STATUS } from "@/lib/plain";
 import { ensureDb, formatDate } from "@/lib/server";
@@ -88,12 +90,23 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
   if (view === "simple") {
     return (
       <>
-        <p className="kicker">My store</p>
-        <h1>{name}</h1>
-        <p className="finding">
-          {added ? "PayPal checkout has been added and tested. Here is what's left to do." : "Four steps to PayPal checkout. We'll guide you through each one."}
-        </p>
-        {saved && <p className="pass">Test account saved.</p>}
+        <div className="app-hero">
+          <div>
+            <p className="kicker">My store</p>
+            <h1>{name}</h1>
+            <p className="finding">
+              {added ? "PayPal checkout has been added and tested. Here is what's left to do." : "Four steps to PayPal checkout. We'll guide you through each one."}
+            </p>
+            {saved && (
+              <p style={{ marginTop: 12 }}>
+                <Badge status="passed">Test account saved</Badge>
+              </p>
+            )}
+          </div>
+          <div className="app-hero-art">
+            <StoreMock name={name} hasPayPal={!!added} />
+          </div>
+        </div>
 
         <ol className="steps">
           <li className={settings.configured ? "done" : "current"}>
@@ -121,8 +134,8 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
             </p>
             <div className="actions">
               {inProgress && latestAdd ? (
-                <Link className="btn" href={`/runs/${latestAdd.id}`}>
-                  {latestAdd.status === "awaiting_approval" ? "Review the plan" : "See progress"}
+                <Link className="btn btn-lg" href={`/runs/${latestAdd.id}`}>
+                  {latestAdd.status === "awaiting_approval" ? "Review the plan" : "See progress"} <Icon name="arrow" size={18} />
                 </Link>
               ) : added ? (
                 <Link className="btn secondary" href={`/runs/${added.id}`}>
@@ -131,8 +144,8 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
               ) : (
                 <form action={startAddPaypalAction}>
                   <input type="hidden" name="installationId" value={inst.id} />
-                  <button className="btn" type="submit">
-                    Add PayPal checkout
+                  <button className="btn btn-lg" type="submit">
+                    <Icon name="spark" size={18} /> Add PayPal checkout
                   </button>
                 </form>
               )}
@@ -150,8 +163,8 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
             </p>
             {added?.pr_url && (
               <div className="actions">
-                <a className="btn" href={added.pr_url}>
-                  Open the change on GitHub
+                <a className="btn btn-lg" href={added.pr_url}>
+                  <Icon name="github" size={18} /> Open the change on GitHub
                 </a>
               </div>
             )}
@@ -164,11 +177,13 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
               warning on GitHub with a plain explanation.
             </p>
             {checks.length > 0 && (
-              <ul className="plain-list small">
+              <ul className="facts">
                 {checks.slice(0, 5).map((c) => (
                   <li key={c.id}>
-                    <Link href={`/runs/${c.id}`}>Change #{c.pr_number}</Link>: <span className={c.status === "passed" ? "pass" : c.status === "failed" ? "fail" : "skipped"}>{PLAIN_STATUS[c.status] ?? c.status}</span>{" "}
-                    <span className="muted">({formatDate(c.created_at)})</span>
+                    <Icon name="pulse" size={16} />
+                    <Link href={`/runs/${c.id}`}>Change #{c.pr_number}</Link>
+                    <Badge status={c.status}>{PLAIN_STATUS[c.status] ?? c.status}</Badge>
+                    <span className="muted small">{formatDate(c.created_at)}</span>
                   </li>
                 ))}
               </ul>
@@ -181,19 +196,26 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
 
   return (
     <>
-      <p className="kicker">Repository</p>
-      <h1>{inst.repo_full_name}</h1>
-      <p className="finding">
-        {added
-          ? "PayPal checkout was added and proven in the sandbox. Every new pull request now gets a PayPal checkout check."
-          : "Start the integration: the agent reads this store, shows you its plan, writes the code, and proves it with a real PayPal sandbox purchase."}
-      </p>
-      <form action={startAddPaypalAction} className="actions">
-        <input type="hidden" name="installationId" value={inst.id} />
-        <button className="btn" type="submit">
-          {added ? "Run the integration again" : "Add PayPal checkout"}
-        </button>
-      </form>
+      <div className="app-hero">
+        <div>
+          <p className="kicker">Repository</p>
+          <h1>{inst.repo_full_name}</h1>
+          <p className="finding">
+            {added
+              ? "PayPal checkout was added and proven in the sandbox. Every new pull request now gets a PayPal checkout check."
+              : "Start the integration: the agent reads this store, shows you its plan, writes the code, and proves it with a real PayPal sandbox purchase."}
+          </p>
+          <form action={startAddPaypalAction} className="actions">
+            <input type="hidden" name="installationId" value={inst.id} />
+            <button className="btn btn-lg" type="submit">
+              <Icon name="spark" size={18} /> {added ? "Run the integration again" : "Add PayPal checkout"}
+            </button>
+          </form>
+        </div>
+        <div className="app-hero-art">
+          <StoreMock name={name} hasPayPal={!!added} />
+        </div>
+      </div>
 
       <section className="section">
         <h2>Runs</h2>
@@ -221,7 +243,7 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
                       </td>
                       <td>{kindLabel(r.kind)}</td>
                       <td>
-                        <Status value={r.status} />
+                        <Badge status={r.status}>{statusLabel(r.status)}</Badge>
                       </td>
                       <td>{r.pr_number ? (r.pr_url ? <a href={r.pr_url}>#{r.pr_number}</a> : `#${r.pr_number}`) : ""}</td>
                       <td className="num">{s?.total ? `${s.passed} of ${s.total}` : ""}</td>
@@ -240,7 +262,11 @@ export default async function StorePage({ params, searchParams }: PageProps<"/re
           Sandbox and test-mode credentials the harness uses for this repository. Secrets are encrypted at rest and never shown again. Leave a secret field empty to keep the saved value.
           Anything left unset falls back to the worker&apos;s own sandbox credentials.
         </p>
-        {saved && <p className="pass">Saved.</p>}
+        {saved && (
+          <p>
+            <Badge status="passed">Saved</Badge>
+          </p>
+        )}
         <SettingsForm installationId={inst.id} settings={settings} simple={false} />
       </section>
     </>
