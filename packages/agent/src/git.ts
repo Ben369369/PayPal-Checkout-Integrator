@@ -35,9 +35,9 @@ export function commitPaths(root: string, paths: string[], message: string): str
   if (!staged) return null;
   git(root, [
     "-c",
-    "user.name=Second Button",
+    "user.name=PayPal Checkout Integrator",
     "-c",
-    "user.email=bot@second-button.dev",
+    "user.email=paypal-checkout-integrator@chui-labs.invalid",
     "commit",
     "-q",
     "-m",

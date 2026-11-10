@@ -1,5 +1,5 @@
 {
-  "name": "@second-button/worker",
+  "name": "@paypal-checkout-integrator/worker",
   "private": true,
   "version": "0.0.0",
   "type": "module",

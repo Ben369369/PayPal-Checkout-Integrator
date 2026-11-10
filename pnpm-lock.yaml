@@ -21,7 +21,7 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^1.6.0
         version: 1.6.0(zod@4.6.7)
-      '@second-button/harness':
+      '@paypal-checkout-integrator/harness':
         specifier: workspace:*
         version: link:../harness
       dotenv:

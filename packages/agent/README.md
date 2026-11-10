@@ -1,10 +1,10 @@
-# @second-button/agent
+# @paypal-checkout-integrator/agent
 
 The agent that adds PayPal checkout to a Stripe-only store. It reads the repository, plans the change, writes the code, and repairs it until the [harness](../harness) passes on a real PayPal sandbox purchase. **The AI never decides a run passed.** Deterministic checks and PayPal's API do.
 
 ```bash
 # from the repo root, with ANTHROPIC_API_KEY plus the PayPal/Stripe sandbox values in ./.env.local
-pnpm --filter @second-button/agent run -- --base main --app fixtures/store-a --yes
+pnpm --filter @paypal-checkout-integrator/agent run -- --base main --app fixtures/store-a --yes
 ```
 
 Flags: `--repo <path>` (default: this repo), `--base <ref>`, `--app <subdir>`, `--branch <name>`, `--max-repairs 4`, `--scenarios 1,2,3`, `--yes` (approve the plan without a prompt).
@@ -13,7 +13,7 @@ Flags: `--repo <path>` (default: this repo), `--base <ref>`, `--app <subdir>`, `
 
 | Stage | What happens | Tools |
 |---|---|---|
-| Setup | New worktree and branch `second-button/add-paypal-<runId>` from `--base`; install; scratch SQLite DB | n/a |
+| Setup | New worktree and branch `paypal-checkout-integrator/add-paypal-<runId>` from `--base`; install; scratch SQLite DB | n/a |
 | 1. Analyze | Writes a **repo map**: checkout entry, cart, order model, Stripe files, success page, admin refund, webhook dedupe, migrations | read only |
 | 2. Plan | Writes a **file plan**: each file, its stage, and its purpose. Shown to the owner for approval before any code is written | read only, plus APIMatic |
 | 3. Implement | Writes the code, then runs install, type check, lint, and build until clean | writes restricted to the plan |

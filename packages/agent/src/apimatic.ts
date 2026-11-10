@@ -23,7 +23,7 @@ export class ApimaticContext {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",
-        "X-Apimatic-Mcp-Client": "SecondButton",
+        "X-Apimatic-Mcp-Client": "PayPalCheckoutIntegrator",
         ...(this.sessionId ? { "Mcp-Session-Id": this.sessionId } : {}),
       },
       body: JSON.stringify(notification ? { jsonrpc: "2.0", method, params } : { jsonrpc: "2.0", id: this.nextId++, method, params }),
@@ -52,7 +52,7 @@ export class ApimaticContext {
     await this.rpc("initialize", {
       protocolVersion: "2025-06-18",
       capabilities: {},
-      clientInfo: { name: "second-button-agent", version: "0.1.0" },
+      clientInfo: { name: "paypal-checkout-integrator-agent", version: "0.1.0" },
     });
     await this.rpc("notifications/initialized", undefined, true);
   }

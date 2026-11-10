@@ -1,6 +1,6 @@
-# Second Button: build brief
+# PayPal Checkout Integrator: build brief
 
-Second Button is a GitHub App that adds PayPal checkout to a Stripe-only store, proves it works with a real PayPal sandbox purchase, and opens a pull request. After merge, it posts a "PayPal checkout" check on every later PR that re-runs the sandbox purchase.
+PayPal Checkout Integrator is a GitHub App that adds PayPal checkout to a Stripe-only store, proves it works with a real PayPal sandbox purchase, and opens a pull request. After merge, it posts a "PayPal checkout" check on every later PR that re-runs the sandbox purchase.
 
 Hackathon: PayPal AI Hackathon on Devpost. Deadline: Nov 12, 2026, 12:00 pm PT (3:00 pm ET).
 Requirements: PayPal sandbox and AI both central, a working hosted demo or run instructions, a public repo with an open-source license, a demo video under 3 minutes.
@@ -11,6 +11,7 @@ Target prizes: Best Use of PayPal + AI, the grand prizes, and the APIMatic spons
 - The AI never decides a run passed. Deterministic checks and PayPal's API do.
 - Don't trust SDK method names from memory or from this file. Check them in the installed package's type definitions (`@paypal/paypal-server-sdk`) or the APIMatic Context Plugin before using them.
 - PayPal webhook signature verification fails on simulator events. Test with real sandbox events. Read webhook headers case-insensitively.
+- All UI work (dashboard, run report, any page we ship) follows `docs/CHUI_LABS_DESIGN.md` (Chui Labs brand). Page titles: `PayPal Checkout Integrator · Chui Labs`. Don't restyle the PayPal button itself; it's PayPal's component.
 - Prefer small, working increments. Each phase below ends with an acceptance check. Don't start the next phase until it passes.
 
 ## Scope
@@ -59,7 +60,7 @@ Analyze the repo (checkout entry, cart model, order model, Stripe files) and sav
 
 ## GitHub App
 Permissions: contents (read/write), pull requests (write), checks (write), metadata (read). Events: installation, pull_request (opened, synchronize), check_run (rerequested).
-First PR: branch `second-button/add-paypal`, one commit per stage, a description with what changed, a scenario results table, a link to the run report, setup steps, and a "what I couldn't verify" list, plus a "PayPal checkout" check run.
+First PR: branch `paypal-checkout-integrator/add-paypal`, one commit per stage, a description with what changed, a scenario results table, a link to the run report, setup steps, and a "what I couldn't verify" list, plus a "PayPal checkout" check run.
 Later PRs: harness only (no code generation), check passes or fails with a scenario table; on failure, post a review comment with the likely cause. Never push to someone else's branch. Skip runs when only docs or CI files change.
 
 ## Data model (Postgres)

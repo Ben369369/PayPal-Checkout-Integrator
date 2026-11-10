@@ -10,7 +10,7 @@ export type Checkout = { dir: string; appDir: string; commitSha: string; cleanup
  * so the run never sees uncommitted files or another branch's build output.
  */
 export function checkoutRef(opts: { repo: string; ref: string; app: string; runId: string }): Checkout {
-  const base = path.join(os.tmpdir(), "second-button-runs");
+  const base = path.join(os.tmpdir(), "paypal-checkout-integrator-runs");
   mkdirSync(base, { recursive: true });
   const dir = path.join(base, opts.runId);
   const git = (...args: string[]) => execFileSync("git", ["-C", opts.repo, ...args], { encoding: "utf8" }).trim();

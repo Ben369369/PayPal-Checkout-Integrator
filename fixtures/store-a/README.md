@@ -1,7 +1,7 @@
 # Tidepool Goods (store-a)
 
 A small Next.js store that takes payment through **Stripe Checkout Sessions** (test mode only).
-It's the Stripe-only starting point that Second Button adds PayPal checkout to.
+It's the Stripe-only starting point that PayPal Checkout Integrator adds PayPal checkout to.
 
 Stack: Next.js 16 (App Router, TypeScript), Prisma 7 + SQLite (better-sqlite3 adapter), Stripe, Tailwind, Playwright.
 

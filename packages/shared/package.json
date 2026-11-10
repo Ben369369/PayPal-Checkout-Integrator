@@ -1,5 +1,5 @@
 {
-  "name": "@second-button/shared",
+  "name": "@paypal-checkout-integrator/shared",
   "private": true,
   "version": "0.0.0",
   "type": "module",

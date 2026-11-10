@@ -1,11 +1,11 @@
 {
-  "name": "@second-button/harness",
+  "name": "@paypal-checkout-integrator/harness",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
-    "second-button-harness": "src/cli.ts"
+    "paypal-checkout-integrator-harness": "src/cli.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p .",

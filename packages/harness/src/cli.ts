@@ -16,7 +16,7 @@ const { values } = parseArgs({
 });
 
 if (!values.ref) {
-  console.error("Usage: pnpm --filter @second-button/harness run -- --ref <git ref> [--repo <path>] [--app <subdir>] [--scenarios 1,2,3] [--keep] [--headed]");
+  console.error("Usage: pnpm --filter @paypal-checkout-integrator/harness run -- --ref <git ref> [--repo <path>] [--app <subdir>] [--scenarios 1,2,3] [--keep] [--headed]");
   process.exit(2);
 }
 

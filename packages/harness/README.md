@@ -1,11 +1,11 @@
-# @second-button/harness
+# @paypal-checkout-integrator/harness
 
 Proves a PayPal integration works by buying things with a real PayPal sandbox account, then checking the result with PayPal's API, the store's database, and a matching Stripe purchase. **The harness, not an AI, decides pass or fail.**
 
 ```bash
 # from the repo root; credentials come from ./.env.local (see ../../.env.example)
-pnpm --filter @second-button/harness run -- --ref store-a/paypal-reference --app fixtures/store-a
-pnpm --filter @second-button/harness run -- --ref <branch> --app fixtures/store-a --scenarios 1,3,7 --headed
+pnpm --filter @paypal-checkout-integrator/harness run -- --ref store-a/paypal-reference --app fixtures/store-a
+pnpm --filter @paypal-checkout-integrator/harness run -- --ref <branch> --app fixtures/store-a --scenarios 1,3,7 --headed
 ```
 
 ## What a run does

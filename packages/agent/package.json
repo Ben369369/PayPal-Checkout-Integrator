@@ -1,5 +1,5 @@
 {
-  "name": "@second-button/agent",
+  "name": "@paypal-checkout-integrator/agent",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
-    "@second-button/harness": "workspace:*",
+    "@paypal-checkout-integrator/harness": "workspace:*",
     "dotenv": "18.0.9",
     "typescript": "5.9.3",
     "zod": "^4.6.7"

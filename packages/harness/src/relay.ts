@@ -113,7 +113,7 @@ export async function replayToStore(storeWebhookUrl: string, event: RelayedEvent
 export function findCloudflared(): string | null {
   const candidates = [
     process.env.CLOUDFLARED_PATH,
-    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "second-button", "bin", "cloudflared.exe"),
+    process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, "paypal-checkout-integrator", "bin", "cloudflared.exe"),
     process.env.ProgramFiles && path.join(process.env.ProgramFiles, "cloudflared", "cloudflared.exe"),
     process.env["ProgramFiles(x86)"] && path.join(process.env["ProgramFiles(x86)"], "cloudflared", "cloudflared.exe"),
   ].filter((p): p is string => Boolean(p));
