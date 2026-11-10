@@ -102,3 +102,10 @@ export function repoParts(fullName: string): { owner: string; repo: string } {
   const [owner, repo] = fullName.split("/");
   return { owner, repo };
 }
+
+/** Removes GitHub tokens and token-bearing URLs from text before it's logged or stored. */
+export function redact(text: string): string {
+  return text
+    .replace(/(https?:\/\/)[^@\s/]*:[^@\s/]*@/g, "$1***@")
+    .replace(/\bgh[pousr]_[A-Za-z0-9_.-]{20,}/g, "gh*_***");
+}

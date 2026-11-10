@@ -1,7 +1,16 @@
 import { execFileSync } from "node:child_process";
-import { CHECK_NAME, installationOctokit, installationToken, repoParts } from "@paypal-checkout-integrator/shared";
+import { CHECK_NAME, installationOctokit, installationToken, redact, repoParts } from "@paypal-checkout-integrator/shared";
 
-const git = (cwd: string, args: string[]) => execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }).trim();
+/** Runs git; on failure, throws git's own error output with any token redacted. */
+function runGit(args: string[]): string {
+  try {
+    return execFileSync("git", args, { encoding: "utf8", maxBuffer: 50 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] }).trim();
+  } catch (err) {
+    const e = err as { stderr?: string; message: string };
+    throw new Error(redact(`git ${args.find((a) => !a.startsWith("-")) ?? ""} failed: ${(e.stderr || e.message).trim()}`));
+  }
+}
+const git = (cwd: string, args: string[]) => runGit(["-C", cwd, ...args]);
 
 function authedUrl(token: string, fullName: string) {
   return `https://x-access-token:${token}@github.com/${fullName}.git`;
@@ -10,7 +19,7 @@ function authedUrl(token: string, fullName: string) {
 /** Clones the repo as the app (installation token). The token never leaves this process. */
 export async function cloneRepo(installationId: string, fullName: string, dir: string) {
   const token = await installationToken(installationId);
-  execFileSync("git", ["clone", "--quiet", authedUrl(token, fullName), dir], { stdio: "ignore" });
+  runGit(["clone", "--quiet", authedUrl(token, fullName), dir]);
 }
 
 /** Refreshes the remote's token (they expire after an hour) and force-pushes our own branch. */

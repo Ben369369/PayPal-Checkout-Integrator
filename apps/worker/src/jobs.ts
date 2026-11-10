@@ -7,6 +7,7 @@ import { formatTable, runHarness, type HarnessEnv, type RunReport } from "@paypa
 import {
   ADD_PAYPAL_BRANCH,
   addEvent,
+  redact,
   botIdentity,
   decidePlan,
   getInstallation,
@@ -49,7 +50,8 @@ async function credentials(installationId: number): Promise<{ creds: Partial<Har
 }
 
 function logger(runId: string) {
-  return (msg: string) => {
+  return (raw: string) => {
+    const msg = redact(raw);
     console.log(`[${runId.slice(0, 8)}] ${msg}`);
     void addEvent(runId, msg).catch(() => {});
     const stage = msg.match(/^▶ (\S+)/)?.[1];
@@ -174,7 +176,7 @@ export async function addPaypalJob(runId: string) {
     });
   } catch (err) {
     log(`✗ ${(err as Error).message}`);
-    await updateRun(runId, { status: "error", error: (err as Error).message.slice(0, 2000), finished_at: new Date() });
+    await updateRun(runId, { status: "error", error: redact((err as Error).message).slice(0, 2000), finished_at: new Date() });
   } finally {
     rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
   }
@@ -231,9 +233,9 @@ export async function checkJob(runId: string) {
     });
   } catch (err) {
     log(`✗ ${(err as Error).message}`);
-    await updateRun(runId, { status: "error", error: (err as Error).message.slice(0, 2000), finished_at: new Date(), check_run_id: checkRunId });
+    await updateRun(runId, { status: "error", error: redact((err as Error).message).slice(0, 2000), finished_at: new Date(), check_run_id: checkRunId });
     if (checkRunId) {
-      await completeCheckRun(inst.github_installation_id, inst.repo_full_name, checkRunId, "neutral", { title: "The check could not run", summary: (err as Error).message.slice(0, 2000) }, url).catch(() => {});
+      await completeCheckRun(inst.github_installation_id, inst.repo_full_name, checkRunId, "neutral", { title: "The check could not run", summary: redact((err as Error).message).slice(0, 2000) }, url).catch(() => {});
     }
   } finally {
     rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
