@@ -1,0 +1,17 @@
+{
+  "name": "second-button",
+  "private": true,
+  "version": "0.0.0",
+  "description": "GitHub App that adds PayPal checkout to a Stripe-only store, proves it with a real sandbox purchase, and opens a PR.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "store-a": "pnpm --dir fixtures/store-a"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

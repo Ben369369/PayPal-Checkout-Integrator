@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  description String
+  priceCents  Int
+  currency    String      @default("usd")
+  imageUrl    String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+  orders    Order[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+/// status: "pending" | "paid" | "canceled" | "refunded"
+model Order {
+  id                      String      @id @default(cuid())
+  cartId                  String?
+  status                  String      @default("pending")
+  currency                String      @default("usd")
+  subtotalCents           Int
+  totalCents              Int
+  customerEmail           String?
+  stripeCheckoutSessionId String?     @unique
+  stripePaymentIntentId   String?     @unique
+  createdAt               DateTime    @default(now())
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  cart                    Cart?       @relation(fields: [cartId], references: [id], onDelete: SetNull)
+  items                   OrderItem[]
+}
+
+model OrderItem {
+  id             String  @id @default(cuid())
+  orderId        String
+  productId      String
+  name           String
+  unitPriceCents Int
+  quantity       Int
+  lineTotalCents Int
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product @relation(fields: [productId], references: [id])
+}
+
+/// Webhook events already handled, so redelivered events are ignored.
+model ProcessedWebhookEvent {
+  id          String   @id
+  provider    String
+  type        String
+  processedAt DateTime @default(now())
+}
