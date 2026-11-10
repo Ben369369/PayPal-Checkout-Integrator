@@ -32,7 +32,15 @@ export async function buildAndStartStore(opts: {
     await run(command, { cwd: opts.appDir, env, logFile, timeoutMs });
   };
 
-  await step("install", "pnpm install --frozen-lockfile", 600_000);
+  // On Windows, antivirus file locks can make pnpm's staging rename fail
+  // ("concurrent package import did not settle"); that's not the code under test, so retry once.
+  try {
+    await step("install", "pnpm install --frozen-lockfile", 600_000);
+  } catch {
+    opts.onStage?.("install (retry)");
+    await new Promise((r) => setTimeout(r, 5000));
+    await step("install", "pnpm install --frozen-lockfile", 600_000);
+  }
   await step("migrate", "pnpm exec prisma migrate deploy", 120_000);
   await step("seed", "pnpm exec prisma db seed", 120_000);
   await step("build", "pnpm build", 600_000);
