@@ -18,6 +18,8 @@
   --sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --serif: "Newsreader", "Source Serif 4", Georgia, "Times New Roman", serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  /* Always a white page (the spec has no dark theme). */
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
