@@ -33,3 +33,6 @@ Thumbs.db
 
 # harness run evidence (videos, traces, results)
 runs/
+
+# agent run artifacts (transcripts, plans, attempts)
+agent-runs/
