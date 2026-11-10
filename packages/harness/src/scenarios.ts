@@ -154,7 +154,35 @@ async function fillCart(page: Page, cart: CartLine[]) {
 async function paypalPurchase(ctx: ScenarioContext, r: Recorder, page: Page, cart: CartLine[]) {
   const expected = expectedTotal(ctx, cart);
   await fillCart(page, cart);
-  const { paypalOrderId, attempts } = await payWithPayPal(page, ctx.buyer, { log: r.note });
+  let lastOrderId: string | null = null;
+  let purchase: { paypalOrderId: string; attempts: number };
+  try {
+    purchase = await payWithPayPal(page, ctx.buyer, { log: r.note, onOrderId: (id) => (lastOrderId = id) });
+  } catch (err) {
+    // The store never confirmed the purchase. Ask PayPal what actually happened, so the evidence
+    // says what was charged instead of only "timed out".
+    if (lastOrderId) {
+      r.result.paypalOrderId = lastOrderId;
+      const { json: order } = await ctx.paypal.getOrder(lastOrderId);
+      r.result.apiEvidence = { ...r.result.apiEvidence, paypalOrder: summarizeOrder(order) };
+      const pu = order.purchase_units?.[0];
+      const capture = pu?.payments?.captures?.[0];
+      r.check("store reached its success page", false, page.url());
+      r.check("PayPal API: order amount equals cart total", valueToCents(pu?.amount?.value) === expected, {
+        paypalOrderAmount: pu?.amount?.value,
+        expectedCents: expected,
+      });
+      if (capture) {
+        r.check("PayPal API: captured amount equals cart total", valueToCents(capture.amount.value) === expected, {
+          captured: capture.amount.value,
+          captureStatus: capture.status,
+          expectedCents: expected,
+        });
+      }
+    }
+    throw err;
+  }
+  const { paypalOrderId, attempts } = purchase;
   if (attempts > 1) r.note(`PayPal popup needed ${attempts} attempts`);
   r.result.paypalOrderId = paypalOrderId;
 

@@ -95,13 +95,14 @@ export async function approveInPopup(popup: Page, buyer: Buyer) {
 export async function payWithPayPal(
   page: Page,
   buyer: Buyer,
-  opts: { until?: "success" | "error"; log?: (msg: string) => void } = {},
+  opts: { until?: "success" | "error"; log?: (msg: string) => void; onOrderId?: (paypalOrderId: string) => void } = {},
 ): Promise<{ paypalOrderId: string; attempts: number }> {
   const until = opts.until ?? "success";
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const { popup, paypalOrderId } = await openPayPalPopup(page);
+      opts.onOrderId?.(paypalOrderId);
       await approveInPopup(popup, buyer);
       if (until === "success") await page.waitForURL(/\/checkout\/success/, { timeout: 60_000 });
       else await page.locator('[role="alert"]').first().waitFor({ state: "visible", timeout: 60_000 });
