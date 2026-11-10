@@ -14,6 +14,7 @@ type Payload = {
   repository?: Repo;
   pull_request?: { number: number; head: { sha: string; ref: string } };
   check_run?: { head_sha: string; app?: { id: number }; pull_requests?: { number: number; head: { ref: string } }[] };
+  check_suite?: { head_sha: string; pull_requests?: { number: number; head: { ref: string } }[] };
 };
 
 export async function POST(request: NextRequest) {
@@ -64,6 +65,19 @@ export async function POST(request: NextRequest) {
             fullName: payload.repository.full_name,
             prNumber: pr.number,
             headSha: payload.check_run.head_sha,
+            headRef: pr.head.ref,
+          });
+          return NextResponse.json({ ok: true, ...result });
+        }
+        break;
+      case "check_suite":
+        // "Re-run all checks" on a pull request sends check_suite.rerequested (not check_run).
+        if (payload.action === "rerequested" && payload.check_suite?.pull_requests?.[0] && payload.repository) {
+          const pr = payload.check_suite.pull_requests[0];
+          const result = await startPullRequestCheck({
+            fullName: payload.repository.full_name,
+            prNumber: pr.number,
+            headSha: payload.check_suite.head_sha,
             headRef: pr.head.ref,
           });
           return NextResponse.json({ ok: true, ...result });
