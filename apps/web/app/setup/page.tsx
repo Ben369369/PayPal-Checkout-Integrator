@@ -1,4 +1,6 @@
 import { getGithubApp, listInstallations } from "@paypal-checkout-integrator/shared";
+import { notFound } from "next/navigation";
+import { currentUser, isOperator } from "@/lib/auth";
 import { ensureDb, publicUrl } from "@/lib/server";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +14,8 @@ function manifest(base: string) {
     description: "Adds PayPal checkout to a Stripe-only store, proves it with a real PayPal sandbox purchase, and opens a pull request. By Chui Labs.",
     hook_attributes: { url: `${base}/api/github/webhook`, active: true },
     redirect_url: `${base}/api/github/manifest/callback`,
+    // "Sign in with GitHub" for store owners.
+    callback_urls: [`${base}/api/auth/callback`],
     setup_url: `${base}/`,
     setup_on_update: true,
     public: true,
@@ -24,6 +28,8 @@ export default async function SetupPage({ searchParams }: PageProps<"/setup">) {
   await ensureDb();
   const { error } = await searchParams;
   const [app, installations] = await Promise.all([getGithubApp(), listInstallations()]);
+  // Before the app exists anyone may create it (first deploy); afterwards only its owner sees this page.
+  if (app && !(await isOperator(await currentUser()))) notFound();
   const base = publicUrl();
   const httpsOk = base.startsWith("https://");
 

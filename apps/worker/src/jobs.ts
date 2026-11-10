@@ -14,6 +14,7 @@ import {
   getPlan,
   getRun,
   getSandboxSettings,
+  savePlainPlan,
   savePlan,
   saveAttempt,
   updateRun,
@@ -22,6 +23,7 @@ import {
 } from "@paypal-checkout-integrator/shared";
 import { passedCount, reportUrl, saveHarnessEvidence } from "./evidence.js";
 import { cloneRepo, commentOnPullRequest, completeCheckRun, createCheckRun, fetchPullHead, openOrUpdatePullRequest, pushBranch } from "./gh.js";
+import { explainPlan, explainResult } from "./explain.js";
 import { prBody, scenarioTable } from "./markdown.js";
 import { dbRelay } from "./relay.js";
 
@@ -112,6 +114,9 @@ export async function addPaypalJob(runId: string) {
       harness: { credentials: creds, relay: dbRelay(runId), runsDir: RUNS_DIR },
       approvePlan: async (plan, repoMap) => {
         await savePlan(runId, repoMap, plan);
+        // Plain-English version for non-technical owners (explanation only).
+        const plain = await explainPlan(repoMap, plan).catch((e) => (log(`  (plain-English plan unavailable: ${(e as Error).message.slice(0, 120)})`), null));
+        if (plain) await savePlainPlan(runId, plain);
         return waitForApproval(runId, log);
       },
       onAttempt: async (attempt, harness, diff) => {
@@ -151,6 +156,7 @@ export async function addPaypalJob(runId: string) {
       draft: !passed,
     });
     log(`Pull request: ${pr.url}`);
+    const plain = await explainResult({ kind: "add_paypal", report: agent.finalHarness, passed, prUrl: pr.url }).catch(() => null);
 
     await updateRun(runId, {
       status: passed ? "passed" : "failed",
@@ -172,6 +178,7 @@ export async function addPaypalJob(runId: string) {
         model: agent.model,
         usage: agent.usage,
         webhookEvents: agent.finalHarness?.webhookRelay.eventsReceived ?? 0,
+        plain,
       },
     });
   } catch (err) {
@@ -225,11 +232,12 @@ export async function checkJob(runId: string) {
         `**PayPal checkout check failed** on \`${run.commit_sha.slice(0, 7)}\`: ${counts.passed} of ${counts.total} sandbox scenarios passed.\n\n${scenarioTable(report)}\n\n${cause ? `**Likely cause** _(AI explanation of the evidence; the pass/fail result above comes from PayPal's API and the checks)_:\n\n${cause}\n\n` : ""}[Run report](${url})`,
       );
     }
+    const plain = await explainResult({ kind: "check", report, passed }).catch(() => null);
     await updateRun(runId, {
       status: passed ? "passed" : "failed",
       finished_at: new Date(),
       check_run_id: checkRunId,
-      summary: { passed: counts.passed, total: counts.total, couldNotVerify: report.couldNotVerify, webhookEvents: report.webhookRelay.eventsReceived },
+      summary: { passed: counts.passed, total: counts.total, couldNotVerify: report.couldNotVerify, webhookEvents: report.webhookRelay.eventsReceived, plain },
     });
   } catch (err) {
     log(`✗ ${(err as Error).message}`);

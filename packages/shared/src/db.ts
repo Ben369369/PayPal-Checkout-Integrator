@@ -152,6 +152,21 @@ const MIGRATIONS: string[] = [
      related_order_id text
    )`,
   `CREATE INDEX IF NOT EXISTS paypal_webhook_events_key_idx ON paypal_webhook_events (relay_key, id)`,
+  // Plain-English explanation of the plan for non-technical owners (AI-written).
+  `ALTER TABLE plans ADD COLUMN IF NOT EXISTS plain jsonb`,
+  // Sign in with GitHub: one row per browser session.
+  `CREATE TABLE IF NOT EXISTS sessions (
+     id text PRIMARY KEY,
+     github_user_id bigint NOT NULL,
+     login text NOT NULL,
+     name text,
+     avatar_url text,
+     token_enc text NOT NULL,
+     installation_ids bigint[] NOT NULL DEFAULT '{}',
+     installations_checked_at timestamptz,
+     created_at timestamptz NOT NULL DEFAULT now(),
+     expires_at timestamptz NOT NULL
+   )`,
 ];
 
 /** Idempotent schema setup; safe to run on every boot of web and worker. */

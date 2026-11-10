@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { listInstallations, listRuns } from "@paypal-checkout-integrator/shared";
+import { listRuns } from "@paypal-checkout-integrator/shared";
+import { requireUser, userStores } from "@/lib/auth";
 import { kindLabel, Status } from "@/components/Status";
 import { duration, ensureDb, formatDate } from "@/lib/server";
 
@@ -8,8 +9,10 @@ export const metadata = { title: "Runs" };
 
 export default async function RunsPage() {
   await ensureDb();
-  const [runs, installations] = await Promise.all([listRuns(undefined, 100), listInstallations()]);
+  const user = await requireUser("/runs");
+  const installations = await userStores(user);
   const repoName = new Map(installations.map((i) => [i.id, i.repo_full_name]));
+  const runs = (await listRuns(undefined, 200)).filter((r) => repoName.has(r.installation_id));
   const finished = runs.filter((r) => ["passed", "failed"].includes(r.status));
   const passed = finished.filter((r) => r.status === "passed").length;
 

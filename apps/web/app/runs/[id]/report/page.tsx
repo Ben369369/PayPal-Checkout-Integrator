@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getInstallation, getPlan, getRun, listAttempts, listScenarioResults, type ScenarioRow } from "@paypal-checkout-integrator/shared";
+import { getInstallation, getPlan, getRun, listAttempts, listScenarioResults, type PlainResult, type ScenarioRow } from "@paypal-checkout-integrator/shared";
+import { PLAIN_SCENARIOS } from "@/lib/plain";
 import { Status } from "@/components/Status";
 import { duration, ensureDb, formatDate, publicUrl } from "@/lib/server";
 
@@ -24,6 +25,7 @@ type Summary = {
   couldNotVerify?: string[];
   model?: string;
   webhookEvents?: number;
+  plain?: PlainResult | null;
 };
 type PayPalOrderEvidence = {
   id: string;
@@ -141,6 +143,21 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
         </p>
       )}
 
+      {summary.plain && (
+        <section className="section selected">
+          <p className="kicker teal">In plain English, explained by AI</p>
+          <p className="finding" style={{ marginTop: 0 }}>{summary.plain.headline}</p>
+          <p className="lede">{summary.plain.whatThisMeans}</p>
+          {summary.plain.nextSteps.length > 0 && (
+            <ul className="plain-list">
+              {summary.plain.nextSteps.map((s) => (
+                <li key={s}>{s}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <dl className="details" style={{ marginTop: 20 }}>
         <dt>Run</dt>
         <dd>
@@ -180,6 +197,7 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
                       <td>{s.scenario}</td>
                       <td>
                         {s.name}
+                        {PLAIN_SCENARIOS[s.scenario] && <div className="small muted">{PLAIN_SCENARIOS[s.scenario]}</div>}
                         {(failed.length > 0 || s.error) && <div className="small fail">{s.error ?? failed.map((c) => c.name).join("; ")}</div>}
                         {s.status === "skipped" && s.notes?.[0] && <div className="small muted">{s.notes[0]}</div>}
                       </td>

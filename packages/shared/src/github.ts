@@ -109,3 +109,10 @@ export function redact(text: string): string {
     .replace(/(https?:\/\/)[^@\s/]*:[^@\s/]*@/g, "$1***@")
     .replace(/\bgh[pousr]_[A-Za-z0-9_.-]{20,}/g, "gh*_***");
 }
+
+/** The app's OAuth client (used for "Sign in with GitHub"). */
+export async function githubOAuthClient(): Promise<{ clientId: string; clientSecret: string } | null> {
+  const row = await one<{ client_id: string | null; client_secret_enc: string | null }>(`SELECT client_id, client_secret_enc FROM github_app WHERE id = 1`);
+  const secret = decrypt(row?.client_secret_enc);
+  return row?.client_id && secret ? { clientId: row.client_id, clientSecret: secret } : null;
+}

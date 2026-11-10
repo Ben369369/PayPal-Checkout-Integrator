@@ -154,7 +154,7 @@ export async function savePlan(runId: string, repoMap: unknown, filePlan: unknow
 }
 
 export const getPlan = (runId: string) =>
-  one<{ run_id: string; repo_map: unknown; file_plan: unknown; approved_at: Date | null; rejected_at: Date | null }>(
+  one<{ run_id: string; repo_map: unknown; file_plan: unknown; plain: PlainPlan | null; approved_at: Date | null; rejected_at: Date | null }>(
     `SELECT * FROM plans WHERE run_id = $1`,
     [runId],
   );
@@ -256,3 +256,53 @@ export const listRelayedEvents = (relayKey: string, afterId = 0) =>
     `SELECT * FROM paypal_webhook_events WHERE relay_key = $1 AND id > $2 ORDER BY id`,
     [relayKey, afterId],
   );
+
+/* Plain-English explanations --------------------------------------------- */
+
+export type PlainPlan = {
+  headline: string;
+  whatCustomersWillSee: string[];
+  whatWeWillChange: string[];
+  whatStaysTheSame: string[];
+  whatYouNeedToDo: string[];
+};
+
+export type PlainResult = { headline: string; whatWeChecked: string[]; whatThisMeans: string; nextSteps: string[] };
+
+export async function savePlainPlan(runId: string, plain: PlainPlan) {
+  await q(`UPDATE plans SET plain = $2 WHERE run_id = $1`, [runId, JSON.stringify(plain)]);
+}
+
+/* Sessions (Sign in with GitHub) ----------------------------------------- */
+
+export type Session = {
+  id: string;
+  github_user_id: string;
+  login: string;
+  name: string | null;
+  avatar_url: string | null;
+  token_enc: string;
+  installation_ids: string[];
+  installations_checked_at: Date | null;
+  expires_at: Date;
+};
+
+export async function createSession(s: { id: string; githubUserId: number; login: string; name: string | null; avatarUrl: string | null; token: string; installationIds: number[]; days: number }) {
+  await q(
+    `INSERT INTO sessions (id, github_user_id, login, name, avatar_url, token_enc, installation_ids, installations_checked_at, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now() + ($8 || ' days')::interval)`,
+    [s.id, s.githubUserId, s.login, s.name, s.avatarUrl, encrypt(s.token), s.installationIds, String(s.days)],
+  );
+}
+
+export const getSession = (id: string) => one<Session>(`SELECT * FROM sessions WHERE id = $1 AND expires_at > now()`, [id]);
+
+export async function updateSessionInstallations(id: string, installationIds: number[]) {
+  await q(`UPDATE sessions SET installation_ids = $2, installations_checked_at = now() WHERE id = $1`, [id, installationIds]);
+}
+
+export async function deleteSession(id: string) {
+  await q(`DELETE FROM sessions WHERE id = $1`, [id]);
+}
+
+export const sessionToken = (s: Session) => decrypt(s.token_enc);

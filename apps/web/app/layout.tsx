@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChuiLogo } from "@/components/Brand";
-import { Nav } from "@/components/Nav";
+import { Nav, ViewToggle, type NavItem } from "@/components/Nav";
+import { currentUser, isOperator } from "@/lib/auth";
+import { currentView } from "@/lib/view";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "PayPal Checkout Integrator · Chui Labs", template: "%s · PayPal Checkout Integrator · Chui Labs" },
-  description: "Adds PayPal checkout to a Stripe-only store, proves it with a real PayPal sandbox purchase, and opens a pull request.",
+  description: "Add PayPal checkout to your custom-built online store without touching code. Tested with real PayPal test purchases before anything changes.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const [user, view] = await Promise.all([currentUser().catch(() => null), currentView()]);
+  const operator = await isOperator(user).catch(() => false);
+  const items: NavItem[] = user
+    ? [{ href: "/", label: "My stores" }, ...(view === "developer" ? [{ href: "/runs", label: "All runs" }] : []), ...(operator ? [{ href: "/setup", label: "Setup" }] : [])]
+    : [{ href: "/#how", label: "How it works" }, { href: "/#who", label: "Who it's for" }];
+
   return (
     <html lang="en">
       <head>
@@ -29,11 +37,31 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <ChuiLogo />
               <span className="brand-name">PayPal Checkout Integrator</span>
             </Link>
-            <Nav />
+            <Nav items={items} />
+            <div className="topbar-end">
+              {user ? (
+                <>
+                  <ViewToggle view={view} />
+                  <span className="user" title={`Signed in as ${user.login}`}>
+                    {user.avatarUrl && <img src={user.avatarUrl} alt="" width={24} height={24} />}
+                    {user.login}
+                  </span>
+                  <form action="/api/auth/logout" method="post">
+                    <button type="submit" className="linklike">
+                      Sign out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <a className="btn" href="/api/auth/login">
+                  Sign in with GitHub
+                </a>
+              )}
+            </div>
           </div>
         </header>
         <main className="page">{children}</main>
-        <footer className="footer">PayPal Checkout Integrator by Chui Labs. PayPal sandbox and Stripe test mode only.</footer>
+        <footer className="footer">PayPal Checkout Integrator by Chui Labs. Uses PayPal&apos;s test mode (sandbox): no real money moves.</footer>
       </body>
     </html>
   );
