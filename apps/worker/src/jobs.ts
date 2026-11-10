@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { anthropicApiKey, runAgent, type AgentReport } from "@paypal-checkout-integrator/agent";
 import { formatTable, runHarness, type HarnessEnv, type RunReport } from "@paypal-checkout-integrator/harness";
 import {
+  ADD_PAYPAL_BRANCH,
   addEvent,
   botIdentity,
   decidePlan,
@@ -23,7 +24,6 @@ import { cloneRepo, commentOnPullRequest, completeCheckRun, createCheckRun, fetc
 import { prBody, scenarioTable } from "./markdown.js";
 import { dbRelay } from "./relay.js";
 
-export const ADD_PAYPAL_BRANCH = "paypal-checkout-integrator/add-paypal";
 const WORK_ROOT = path.join(os.tmpdir(), "paypal-checkout-integrator-worker");
 const RUNS_DIR = path.join(WORK_ROOT, "harness-runs");
 const AGENT_RUNS_DIR = path.join(WORK_ROOT, "agent-runs");

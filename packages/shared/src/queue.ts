@@ -1,5 +1,5 @@
 import { PgBoss } from "pg-boss";
-import { databaseUrl, sslFor } from "./db.js";
+import { databaseUrl, sslFor } from "./db";
 
 export const QUEUES = { addPaypal: "add_paypal", check: "paypal_check" } as const;
 export type JobData = { runId: string };

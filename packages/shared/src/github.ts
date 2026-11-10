@@ -1,9 +1,11 @@
 import { App, Octokit } from "octokit";
-import { decrypt, encrypt } from "./crypto.js";
-import { one, q } from "./db.js";
+import { decrypt, encrypt } from "./crypto";
+import { one, q } from "./db";
 
 export const CHECK_NAME = "PayPal checkout";
 export const PRODUCT_NAME = "PayPal Checkout Integrator";
+/** The branch the app opens its PayPal PR from. */
+export const ADD_PAYPAL_BRANCH = "paypal-checkout-integrator/add-paypal";
 
 export type GithubAppRow = {
   app_id: string;

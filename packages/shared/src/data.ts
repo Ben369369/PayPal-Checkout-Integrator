@@ -1,5 +1,5 @@
-import { decrypt, encrypt } from "./crypto.js";
-import { one, q } from "./db.js";
+import { decrypt, encrypt } from "./crypto";
+import { one, q } from "./db";
 
 export type Installation = {
   id: number;

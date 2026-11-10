@@ -1,0 +1,32 @@
+# PayPal Checkout Integrator (Chui Labs): Render blueprint.
+# Web service (GitHub webhooks, dashboard, run reports, PayPal webhook relay) + Postgres.
+# The worker (agent + harness) runs separately: see README "Run the worker".
+databases:
+  - name: paypal-checkout-integrator-db
+    plan: free
+    databaseName: paypal_checkout_integrator
+    user: pci
+
+services:
+  - type: web
+    name: paypal-checkout-integrator
+    runtime: node
+    plan: free
+    buildCommand: npm install -g pnpm@12.18.0 && pnpm install --frozen-lockfile --filter "@paypal-checkout-integrator/web..." && pnpm --filter @paypal-checkout-integrator/web build
+    startCommand: pnpm --filter @paypal-checkout-integrator/web start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: paypal-checkout-integrator-db
+          property: connectionString
+      # Encrypts the GitHub App key and sandbox credentials at rest. The worker needs the same value.
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      # Password for the dashboard (user "admin"). Run reports and webhooks stay public.
+      - key: DASHBOARD_PASSWORD
+        sync: false
