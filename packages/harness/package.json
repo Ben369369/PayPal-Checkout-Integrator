@@ -4,7 +4,22 @@
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
+  "bin": {
+    "second-button-harness": "src/cli.ts"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "run": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.11.1",
+    "dotenv": "18.0.9",
+    "playwright": "1.65.0",
+    "stripe": "23.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15"
   }
 }

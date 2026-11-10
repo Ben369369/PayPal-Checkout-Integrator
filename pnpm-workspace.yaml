@@ -3,3 +3,7 @@ packages:
   - "packages/*"
 # fixtures/* are intentionally NOT workspace members: each is a standalone
 # repo with its own lockfile, so the harness can clean-checkout and install it.
+
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true

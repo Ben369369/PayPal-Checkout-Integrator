@@ -30,3 +30,6 @@ Thumbs.db
 
 # local worktrees (e.g. the PayPal reference branch)
 .worktrees/
+
+# harness run evidence (videos, traces, results)
+runs/
