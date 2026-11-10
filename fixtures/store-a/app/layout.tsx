@@ -25,7 +25,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/cart" className="hover:underline" data-testid="nav-cart">
                 Cart (<span data-testid="cart-count">{cart.itemCount}</span>)
               </Link>
-              <Link href="/admin/orders" className="text-stone-500 hover:underline">
+              {/* No prefetch: /admin needs HTTP auth, and prefetching it logs 401s for shoppers. */}
+              <Link href="/admin/orders" prefetch={false} className="text-stone-500 hover:underline">
                 Admin
               </Link>
             </div>
