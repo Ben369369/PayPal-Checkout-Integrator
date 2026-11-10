@@ -3,8 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "src/main.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.6.0",
+    "@paypal-checkout-integrator/agent": "workspace:*",
+    "@paypal-checkout-integrator/harness": "workspace:*",
+    "@paypal-checkout-integrator/shared": "workspace:*",
+    "dotenv": "18.0.9",
+    "tsx": "^4.23.15"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "5.9.3"
   }
 }

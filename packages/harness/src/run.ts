@@ -3,9 +3,9 @@ import path from "node:path";
 import { chromium } from "playwright";
 import Stripe from "stripe";
 import { StoreDb } from "./db.js";
-import { loadEnv, REPO_ROOT } from "./env.js";
+import { loadEnv, REPO_ROOT, type HarnessEnv } from "./env.js";
 import { PayPalApi } from "./paypal-api.js";
-import { findCloudflared, startQuickTunnel, WebhookRelay } from "./relay.js";
+import { RELAY_URL_MARKERS, tunnelRelay, type RelayFactory, type WebhookSource } from "./relay.js";
 import { runScenarios, type ScenarioResult } from "./scenarios.js";
 import { buildAndStartStore, type RunningStore } from "./store.js";
 import { checkoutRef } from "./workspace.js";
@@ -18,6 +18,12 @@ export type RunOptions = {
   keepCheckout?: boolean;
   headed?: boolean;
   log?: (msg: string) => void;
+  /** Sandbox credentials for this run; anything missing falls back to the environment. */
+  credentials?: Partial<HarnessEnv>;
+  /** How PayPal webhooks reach the run. Defaults to a local relay behind a Cloudflare quick tunnel. */
+  relay?: RelayFactory;
+  /** Where runs/<runId>/ evidence is written. Defaults to the repo's runs/ folder. */
+  runsDir?: string;
 };
 
 export type RunReport = {
@@ -39,9 +45,9 @@ const WEBHOOK_EVENTS = ["PAYMENT.CAPTURE.COMPLETED", "PAYMENT.CAPTURE.DENIED", "
 
 export async function runHarness(opts: RunOptions): Promise<RunReport> {
   const log = opts.log ?? ((m: string) => console.log(m));
-  const env = loadEnv();
+  const env = loadEnv(opts.credentials);
   const runId = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
-  const runDir = path.join(REPO_ROOT, "runs", runId);
+  const runDir = path.join(opts.runsDir ?? path.join(REPO_ROOT, "runs"), runId);
   mkdirSync(runDir, { recursive: true });
 
   const report: RunReport = {
@@ -59,7 +65,7 @@ export async function runHarness(opts: RunOptions): Promise<RunReport> {
   const save = () => writeFileSync(path.join(runDir, "results.json"), JSON.stringify(report, null, 2));
   const cleanups: (() => Promise<void> | void)[] = [];
   const paypal = new PayPalApi(env.paypalClientId, env.paypalClientSecret);
-  let relay: WebhookRelay | null = null;
+  let relay: WebhookSource | null = null;
   let store: RunningStore | null = null;
 
   try {
@@ -69,24 +75,20 @@ export async function runHarness(opts: RunOptions): Promise<RunReport> {
     if (!opts.keepCheckout) cleanups.push(checkout.cleanup);
     log(`  checkout ${checkout.commitSha.slice(0, 8)} → ${checkout.dir}`);
 
-    // Webhook relay: public tunnel → local relay; register a PayPal webhook for this run only.
+    // Webhook relay: register a PayPal webhook for this run only, pointing at the relay.
     let webhookId = "";
-    const cloudflared = findCloudflared();
-    if (cloudflared) {
-      relay = new WebhookRelay();
-      const relayPort = await relay.start();
-      cleanups.push(() => relay?.stop());
-      const tunnel = await startQuickTunnel(cloudflared, relayPort, path.join(runDir, "tunnel.log"));
-      cleanups.push(tunnel.stop);
+    const handle = await (opts.relay ?? tunnelRelay)({ runDir, log });
+    if (handle) {
+      relay = handle.source;
+      cleanups.push(handle.stop);
       const { json } = await paypal.listWebhooks();
-      for (const w of json.webhooks ?? []) if (w.url.includes(".trycloudflare.com")) await paypal.deleteWebhook(w.id);
-      webhookId = await paypal.createWebhook(`${tunnel.url}/paypal/webhook`, WEBHOOK_EVENTS);
+      for (const w of json.webhooks ?? []) if (RELAY_URL_MARKERS.some((m) => w.url.includes(m))) await paypal.deleteWebhook(w.id);
+      webhookId = await paypal.createWebhook(handle.url, WEBHOOK_EVENTS);
       cleanups.push(() => paypal.deleteWebhook(webhookId));
-      report.webhookRelay = { enabled: true, url: tunnel.url, webhookId, eventsReceived: 0 };
-      log(`  webhook relay ${tunnel.url} (PayPal webhook ${webhookId})`);
+      report.webhookRelay = { enabled: true, url: handle.url, webhookId, eventsReceived: 0 };
+      log(`  webhook relay ${handle.url} (PayPal webhook ${webhookId})`);
     } else {
-      report.webhookRelay.reason = "cloudflared not found; webhook scenarios limited";
-      log("  ! cloudflared not found: webhook scenarios 5 and 6 will be skipped or partial");
+      report.webhookRelay.reason = "no webhook relay available; webhook scenarios limited";
     }
 
     store = await buildAndStartStore({

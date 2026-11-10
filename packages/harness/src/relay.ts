@@ -147,3 +147,40 @@ export async function startQuickTunnel(binary: string, port: number, logFile: st
   });
   return { url, stop: () => child && killTree(child) };
 }
+
+/* ------------------------------------------------------------------ */
+/* Pluggable relay                                                     */
+/* ------------------------------------------------------------------ */
+
+/** Where relayed PayPal events can be read from. */
+export interface WebhookSource {
+  readonly events: RelayedEvent[];
+  waitFor(match: (e: RelayedEvent) => boolean, timeoutMs: number): Promise<RelayedEvent | null>;
+}
+
+/** A public webhook URL for PayPal to deliver to, and the source that collects its deliveries. */
+export type RelayHandle = { url: string; source: WebhookSource; stop: () => Promise<void> | void };
+export type RelayFactory = (ctx: { runDir: string; log: (msg: string) => void }) => Promise<RelayHandle | null>;
+
+/** URLs of webhooks created by earlier runs (safe to delete before registering a new one). */
+export const RELAY_URL_MARKERS = [".trycloudflare.com", "/api/paypal/relay/"];
+
+/** Default for local runs: an in-process relay behind a Cloudflare quick tunnel. */
+export const tunnelRelay: RelayFactory = async ({ runDir, log }) => {
+  const binary = findCloudflared();
+  if (!binary) {
+    log("  ! cloudflared not found: webhook scenarios 5 and 6 will be skipped or partial");
+    return null;
+  }
+  const relay = new WebhookRelay();
+  const port = await relay.start();
+  const tunnel = await startQuickTunnel(binary, port, path.join(runDir, "tunnel.log"));
+  return {
+    url: `${tunnel.url}/paypal/webhook`,
+    source: relay,
+    stop: () => {
+      tunnel.stop();
+      relay.stop();
+    },
+  };
+};

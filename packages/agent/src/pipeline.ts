@@ -3,9 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import { parse as parseEnv } from "dotenv";
-import { formatTable, runHarness, type RunReport } from "@paypal-checkout-integrator/harness";
+import { formatTable, runHarness, type RunOptions as HarnessOptions, type RunReport } from "@paypal-checkout-integrator/harness";
 import { ApimaticContext } from "./apimatic.js";
-import { changedFiles, commitPaths, createWorktree, diffSince, git } from "./git.js";
+import { changedFiles, commitPaths, createWorktree, diffSince, git, type CommitIdentity } from "./git.js";
 import { buildChecks, planScopeGuard, runStep, sdkMethodGuard, secretsGuard, stripeGuard, type CheckResult } from "./guards.js";
 import { emptyUsage, MODEL, runLoop, type AgentTool, type Usage } from "./llm.js";
 import { analyzePrompt, implementPrompt, planPrompt, repairPrompt, SYSTEM_PROMPT } from "./prompts.js";
@@ -23,6 +23,14 @@ export type AgentRunOptions = {
   scenarios?: number[];
   approvePlan?: (plan: FilePlan, repoMap: RepoMap) => Promise<boolean>;
   log?: (msg: string) => void;
+  /** Who the commits are from (the GitHub App's bot user when running as the app). */
+  identity?: CommitIdentity;
+  /** Passed through to every harness run (per-repo sandbox credentials, webhook relay, evidence folder). */
+  harness?: Pick<HarnessOptions, "credentials" | "relay" | "runsDir">;
+  /** Where agent-runs/<runId>/ is written. */
+  outDir?: string;
+  /** Called after each check attempt is saved. */
+  onAttempt?: (attempt: Attempt, harness: RunReport | null, diff: string) => Promise<void> | void;
 };
 
 export type Attempt = {
@@ -59,6 +67,8 @@ export type AgentReport = {
   startedAt: string;
   finishedAt?: string;
   error?: string;
+  /** The last harness run (its full report), if one ran. */
+  finalHarness?: RunReport;
 };
 
 /**
@@ -98,7 +108,8 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
   const log = opts.log ?? ((m: string) => console.log(m));
   const maxRepairs = opts.maxRepairs ?? 4;
   const runId = new Date().toISOString().replace(/[:.]/g, "-").replace("T", "_").slice(0, 19);
-  const outDir = path.join(REPO_ROOT, "agent-runs", runId);
+  const outDir = path.join(opts.outDir ?? path.join(REPO_ROOT, "agent-runs"), runId);
+  const identity: CommitIdentity = opts.identity ?? { name: "PayPal Checkout Integrator", email: "paypal-checkout-integrator@chui-labs.invalid" };
   mkdirSync(outDir, { recursive: true });
   const branch = opts.branch ?? `paypal-checkout-integrator/add-paypal-${runId}`;
   const worktreeDir = path.join(opts.repo, ".worktrees", `agent-${runId}`);
@@ -207,7 +218,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
       plan.files.find((p) => p.path === f)?.stage ?? (["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"].includes(f) ? "dependencies" : "config");
     for (const stage of STAGE_ORDER) {
       const files = changed.filter((f) => stageOf(f) === stage).map(toRepoPath);
-      const sha = commitPaths(worktreeDir, files, STAGE_MESSAGES[stage] + TRAILER);
+      const sha = commitPaths(worktreeDir, files, STAGE_MESSAGES[stage] + TRAILER, identity);
       if (sha) report.commits.push({ sha, message: STAGE_MESSAGES[stage] });
     }
     save();
@@ -242,7 +253,8 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
         attempt.failingCheck = failed.name;
         attempt.errorSummary = failed.output.slice(-1500);
       } else {
-        harness = await runHarness({ repo: opts.repo, ref: branch, app: appPrefix, scenarios: opts.scenarios, log: (m) => log(`   │ ${m}`) });
+        harness = await runHarness({ ...opts.harness, repo: opts.repo, ref: branch, app: appPrefix, scenarios: opts.scenarios, log: (m) => log(`   │ ${m}`) });
+        report.finalHarness = harness;
         attempt.harnessRunId = harness.runId;
         attempt.harnessStatus = harness.status;
         attempt.scenarioTable = formatTable(harness);
@@ -256,9 +268,11 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
       }
       const attemptDir = path.join(outDir, `attempt-${iteration}`);
       mkdirSync(attemptDir, { recursive: true });
-      writeFileSync(path.join(attemptDir, "diff.patch"), diffSince(worktreeDir, report.baseSha, appPrefix));
+      const attemptDiff = diffSince(worktreeDir, report.baseSha, appPrefix);
+      writeFileSync(path.join(attemptDir, "diff.patch"), attemptDiff);
       writeFileSync(path.join(attemptDir, "attempt.json"), JSON.stringify(attempt, null, 2));
       save();
+      await opts.onAttempt?.(attempt, harness, attemptDiff);
 
       if (!attempt.failingCheck) {
         report.status = "passed";
@@ -272,7 +286,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
       }
 
       /* Repair */
-      const evidence = buildEvidence(failed ?? null, harness);
+      const evidence = buildEvidence(failed ?? null, harness, opts.harness?.runsDir);
       writeFileSync(path.join(attemptDir, "evidence.md"), evidence);
       const repaired = await loop(`repair-${iteration + 1}`, repairPrompt({ round: iteration + 1, maxRounds: maxRepairs, planJson, evidence }), [
         ...readTools(ws),
@@ -282,7 +296,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
       if (repaired.finished) attempt.repair = FinishSchema.parse(repaired.finished);
       const files = changedFiles(worktreeDir, report.baseSha, appPrefix).map(toRepoPath);
       const msg = `PayPal: repair round ${iteration + 1} (${attempt.failingCheck})`;
-      const sha = commitPaths(worktreeDir, files, msg + (attempt.repair ? `\n\n${attempt.repair.summary}` : "") + TRAILER);
+      const sha = commitPaths(worktreeDir, files, msg + (attempt.repair ? `\n\n${attempt.repair.summary}` : "") + TRAILER, identity);
       if (sha) report.commits.push({ sha, message: msg });
     }
     report.headSha = git(worktreeDir, ["rev-parse", "HEAD"]);
@@ -304,7 +318,7 @@ export async function runAgent(opts: AgentRunOptions): Promise<AgentReport> {
 }
 
 /** Turns a failing check or harness run into the exact evidence the repair stage sees. */
-function buildEvidence(failedCheck: CheckResult | null, harness: RunReport | null): string {
+function buildEvidence(failedCheck: CheckResult | null, harness: RunReport | null, harnessRunsDir?: string): string {
   if (failedCheck) return `## Failing check: ${failedCheck.name}\n\n\`\`\`\n${failedCheck.output}\n\`\`\``;
   if (!harness) return "No evidence.";
   const parts = [`## Harness run ${harness.runId}: ${harness.status}`, "", formatTable(harness)];
@@ -316,7 +330,7 @@ function buildEvidence(failedCheck: CheckResult | null, harness: RunReport | nul
     if (s.notes.length) parts.push(`Notes: ${s.notes.join("; ")}`);
     if (s.apiEvidence) parts.push("PayPal/Stripe API evidence:", "```json", JSON.stringify(s.apiEvidence, null, 2).slice(0, 3000), "```");
   }
-  const storeLog = path.join(REPO_ROOT, "runs", harness.runId, "store.log");
+  const storeLog = path.join(harnessRunsDir ?? path.join(REPO_ROOT, "runs"), harness.runId, "store.log");
   if (existsSync(storeLog)) {
     const text = readFileSync(storeLog, "utf8");
     // The last "▲ Next.js" banner is `next start`; everything after it is the running server's output.

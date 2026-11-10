@@ -28,16 +28,18 @@ export function diffSince(root: string, baseSha: string, appPrefix: string): str
 }
 
 /** Commits the given paths (relative to the repo root) if any of them changed. Returns the sha or null. */
-export function commitPaths(root: string, paths: string[], message: string): string | null {
+export type CommitIdentity = { name: string; email: string };
+
+export function commitPaths(root: string, paths: string[], message: string, identity: CommitIdentity): string | null {
   if (paths.length === 0) return null;
   git(root, ["add", "-A", "--", ...paths]);
   const staged = git(root, ["diff", "--cached", "--name-only"]);
   if (!staged) return null;
   git(root, [
     "-c",
-    "user.name=PayPal Checkout Integrator",
+    `user.name=${identity.name}`,
     "-c",
-    "user.email=paypal-checkout-integrator@chui-labs.invalid",
+    `user.email=${identity.email}`,
     "commit",
     "-q",
     "-m",

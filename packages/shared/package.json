@@ -4,7 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@octokit/webhooks-methods": "6.0.0",
+    "octokit": "5.0.5",
+    "pg": "8.23.1",
+    "pg-boss": "12.38.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/pg": "8.23.1"
   }
 }

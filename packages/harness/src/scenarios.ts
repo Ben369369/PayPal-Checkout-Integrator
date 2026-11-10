@@ -15,7 +15,7 @@ import {
 } from "./browser.js";
 import { diffSnapshots, StoreDb, type OrderSnapshot } from "./db.js";
 import { PayPalApi, summarizeOrder, valueToCents } from "./paypal-api.js";
-import { replayToStore, type RelayedEvent, type WebhookRelay } from "./relay.js";
+import { replayToStore, type RelayedEvent, type WebhookSource } from "./relay.js";
 import type { RunningStore } from "./store.js";
 
 export type Check = { name: string; pass: boolean; detail?: string };
@@ -45,7 +45,7 @@ export type ScenarioContext = {
   paypal: PayPalApi;
   stripe: Stripe;
   buyer: Buyer;
-  relay: WebhookRelay | null;
+  relay: WebhookSource | null;
   runDir: string;
   prices: Record<string, number>;
   log: (msg: string) => void;

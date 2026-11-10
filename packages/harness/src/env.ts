@@ -20,15 +20,16 @@ export type HarnessEnv = {
   stripeSecretKey: string;
 };
 
-export function loadEnv(): HarnessEnv {
+export function loadEnv(overrides: Partial<HarnessEnv> = {}): HarnessEnv {
   if ((process.env.PAYPAL_ENV ?? "sandbox") !== "sandbox") throw new Error("The harness only runs against the PayPal sandbox");
-  const stripeSecretKey = required("STRIPE_SECRET_KEY");
-  if (!stripeSecretKey.startsWith("sk_test_")) throw new Error("STRIPE_SECRET_KEY must be a test-mode key");
+  const pick = (key: keyof HarnessEnv, envName: string) => overrides[key] || required(envName);
+  const stripeSecretKey = pick("stripeSecretKey", "STRIPE_SECRET_KEY");
+  if (!stripeSecretKey.startsWith("sk_test_")) throw new Error("The Stripe key must be a test-mode key");
   return {
-    paypalClientId: required("PAYPAL_CLIENT_ID"),
-    paypalClientSecret: required("PAYPAL_CLIENT_SECRET"),
-    buyerEmail: required("PAYPAL_SANDBOX_BUYER_EMAIL"),
-    buyerPassword: required("PAYPAL_SANDBOX_BUYER_PASSWORD"),
+    paypalClientId: pick("paypalClientId", "PAYPAL_CLIENT_ID"),
+    paypalClientSecret: pick("paypalClientSecret", "PAYPAL_CLIENT_SECRET"),
+    buyerEmail: pick("buyerEmail", "PAYPAL_SANDBOX_BUYER_EMAIL"),
+    buyerPassword: pick("buyerPassword", "PAYPAL_SANDBOX_BUYER_PASSWORD"),
     stripeSecretKey,
   };
 }
