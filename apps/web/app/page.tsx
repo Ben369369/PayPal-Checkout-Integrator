@@ -15,8 +15,17 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const { error } = await searchParams;
   const user = await currentUser();
   if (!user) {
-    const featured = await one<{ id: string }>(`SELECT id FROM runs WHERE kind = 'add_paypal' AND status = 'passed' ORDER BY finished_at DESC LIMIT 1`);
-    return <Landing reportUrl={featured ? `/runs/${featured.id}/report` : null} error={typeof error === "string" ? error : undefined} />;
+    const featured = await one<{ id: string; video_url: string | null }>(
+      `SELECT r.id, s.video_url FROM runs r LEFT JOIN scenario_results s ON s.run_id = r.id AND s.scenario = 1
+       WHERE r.kind = 'add_paypal' AND r.status = 'passed' ORDER BY r.finished_at DESC LIMIT 1`,
+    );
+    return (
+      <Landing
+        reportUrl={featured ? `/runs/${featured.id}/report` : null}
+        videoUrl={featured?.video_url ?? null}
+        error={typeof error === "string" ? error : undefined}
+      />
+    );
   }
 
   const [view, app, stores] = await Promise.all([currentView(), getGithubApp(), userStores(user)]);

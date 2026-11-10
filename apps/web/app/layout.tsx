@@ -5,6 +5,7 @@ import { Nav, ViewToggle, type NavItem } from "@/components/Nav";
 import { currentUser, isOperator } from "@/lib/auth";
 import { currentView } from "@/lib/view";
 import "./globals.css";
+import "./landing.css";
 
 export const metadata: Metadata = {
   title: { default: "PayPal Checkout Integrator · Chui Labs", template: "%s · PayPal Checkout Integrator · Chui Labs" },

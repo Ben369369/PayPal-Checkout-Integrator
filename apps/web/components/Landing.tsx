@@ -1,92 +1,192 @@
-import { PLAIN_SCENARIOS } from "@/lib/plain";
+import { HeroDemo } from "./landing/HeroDemo";
+import { HowItWorks } from "./landing/HowItWorks";
+import { Icon } from "./landing/Icons";
+import { ScenarioGrid } from "./landing/ScenarioGrid";
+
+const FAQ = [
+  ["Do I need to know how to code?", "No. You sign in, click a button, read a plain-English plan, and approve it. When the tests pass, you accept the change on GitHub with one click. Whoever publishes your website just publishes it as usual."],
+  ["Is my money or my customers' money at risk?", "No. Everything runs in PayPal's test mode (the sandbox), where no real money moves. Your card payments are never modified, and we test that they still work."],
+  ["What if the AI gets something wrong?", "The AI writes the code, but it never decides whether it works. A robot shopper makes nine real test purchases and PayPal's own records decide pass or fail. If something fails, the AI gets the exact evidence and fixes it before you see anything."],
+  ["Which stores does it work with?", "Custom-built stores whose code is on GitHub and take card payments with Stripe. Today we support stores built with Next.js and Prisma, the most common setup for AI-built and agency-built shops. Shopify, Wix, and Squarespace already have PayPal built in."],
+  ["What happens after PayPal is added?", "Every future change to your store is re-tested with PayPal test purchases before it goes live. If a change would break checkout, you see a red warning on GitHub with a plain explanation."],
+];
 
 /** Public front page for store owners (signed out). */
-export function Landing({ reportUrl, error }: { reportUrl: string | null; error?: string }) {
+export function Landing({ reportUrl, videoUrl, error }: { reportUrl: string | null; videoUrl: string | null; error?: string }) {
   return (
-    <>
-      <section className="hero">
-        <p className="kicker">For owners of custom-built online stores</p>
-        <h1>Add PayPal to your store, without touching code</h1>
-        <p className="finding">
-          Your store was built by a freelancer, an agency, or an AI site builder. We add PayPal checkout next to your card payments, test it with real PayPal test
-          purchases, and hand you the finished change to accept. Nothing changes until you say yes.
-        </p>
-        {error && <p className="fail">Sign-in didn&apos;t work. Please try again.</p>}
-        <div className="actions">
-          <a className="btn" href="/api/auth/login">
-            Sign in with GitHub
-          </a>
-          {reportUrl && (
-            <a className="btn secondary" href={reportUrl}>
-              See a real test report
+    <div className="landing">
+      {/* Hero ------------------------------------------------------------ */}
+      <section className="lp-hero">
+        <div className="lp-hero-copy">
+          <p className="kicker">For owners of custom-built online stores</p>
+          <h1>Add PayPal to your store. Without touching code.</h1>
+          <p className="lp-sub">
+            Your store was built by a freelancer, an agency, or an AI site builder. We add PayPal checkout next to your card payments, prove it works with real test purchases, and hand you
+            the finished change to accept.
+          </p>
+          {error && <p className="fail">Sign-in didn&apos;t work. Please try again.</p>}
+          <div className="actions">
+            <a className="btn btn-lg" href="/api/auth/login">
+              <Icon name="github" size={18} /> Start free with GitHub
             </a>
-          )}
+            {reportUrl && (
+              <a className="btn btn-lg secondary" href={reportUrl}>
+                See a real test report
+              </a>
+            )}
+          </div>
+          <ul className="lp-proof">
+            <li>
+              <Icon name="clock" size={18} /> About 30 minutes, start to finish
+            </li>
+            <li>
+              <Icon name="lock" size={18} /> Test mode only. No real money moves
+            </li>
+            <li>
+              <Icon name="card" size={18} /> Card payments never touched
+            </li>
+          </ul>
+        </div>
+        <HeroDemo />
+      </section>
+
+      {/* Numbers --------------------------------------------------------- */}
+      <section className="lp-stats">
+        <div>
+          <div className="big-number">9</div>
+          <p>real test purchases before you accept anything</p>
+        </div>
+        <div>
+          <div className="big-number">0</div>
+          <p>lines of code you write or read</p>
+        </div>
+        <div>
+          <div className="big-number">1</div>
+          <p>click to accept the finished change</p>
+        </div>
+        <div>
+          <div className="big-number">∞</div>
+          <p>future changes re-tested automatically</p>
         </div>
       </section>
 
-      <section className="section" id="how">
+      {/* How it works ---------------------------------------------------- */}
+      <section className="lp-section" id="how">
         <p className="kicker">How it works</p>
-        <div className="big-number">
-          9 <span className="of">real test purchases before you accept anything</span>
-        </div>
-        <div className="grid-3" style={{ marginTop: 28 }}>
-          <div className="item best">
-            <h3>1. Connect your store</h3>
-            <p>Sign in with GitHub, where your store&apos;s code lives, and choose the store. Then paste your free PayPal test-account details; we show you exactly where to find them.</p>
-          </div>
-          <div className="item">
-            <h3>2. Approve a plan in plain English</h3>
-            <p>Our AI reads your store and explains what it will add, what your customers will see, and what stays the same. You decide before anything is written.</p>
-          </div>
-          <div className="item">
-            <h3>3. Accept the tested change</h3>
-            <p>We build it, then a robot shopper makes real PayPal test purchases. You get a report and a ready-made change to accept on GitHub. It goes live the next time your site is published.</p>
-          </div>
-        </div>
-        <p className="lede" style={{ marginTop: 20 }}>
-          After that, every future change to your store is re-tested with PayPal before it goes live, so nobody breaks your checkout by accident.
-        </p>
+        <h2 className="lp-h2">Three steps. You stay in control of each one.</h2>
+        <HowItWorks />
       </section>
 
-      <section className="section">
-        <h2>What every test run checks</h2>
-        <div className="grid-2">
-          <ol className="plain-list">
-            {Object.values(PLAIN_SCENARIOS).map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ol>
-          <dl className="details">
-            <dt>Money</dt>
-            <dd>PayPal&apos;s test mode only: no real money moves during testing.</dd>
-            <dt>Your card payments</dt>
-            <dd>Never modified. We test that they still work.</dd>
-            <dt>Who decides</dt>
-            <dd>You approve the plan and accept the change. Pass or fail comes from PayPal&apos;s own records, not from the AI.</dd>
-          </dl>
+      {/* Real video ------------------------------------------------------ */}
+      {videoUrl && (
+        <section className="lp-section lp-tint">
+          <div className="lp-split">
+            <div>
+              <p className="kicker">Not a mock-up</p>
+              <h2 className="lp-h2">Watch our robot shopper buy from a real store</h2>
+              <p className="lp-sub">
+                This is an actual recording from a test run: the shopper adds items to the cart, checks out with PayPal&apos;s test mode, and lands on the thank-you page. PayPal&apos;s own
+                records then confirm the payment, to the cent.
+              </p>
+              {reportUrl && (
+                <a className="text-link" href={reportUrl}>
+                  Open the full test report →
+                </a>
+              )}
+            </div>
+            <div className="video-frame">
+              {/* Start a few seconds in so the first frame shows the store, not a blank page load. */}
+              <video src={`${videoUrl}#t=4`} controls muted playsInline preload="metadata" />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* What we test ---------------------------------------------------- */}
+      <section className="lp-section">
+        <p className="kicker">What every test run checks</p>
+        <h2 className="lp-h2">Nine things that go wrong with real payments. We try them all.</h2>
+        <p className="lp-sub">Click any one to see why it matters.</p>
+        <ScenarioGrid />
+      </section>
+
+      {/* Stay protected -------------------------------------------------- */}
+      <section className="lp-section lp-tint">
+        <div className="lp-split">
+          <div>
+            <p className="kicker">After you go live</p>
+            <h2 className="lp-h2">Nobody breaks your checkout by accident</h2>
+            <p className="lp-sub">
+              Every future change to your store gets re-tested with PayPal before it goes live. In one of our tests, a well-meaning change would have let a shopper pay one cent for a
+              $129 blanket. It was caught before anyone accepted it.
+            </p>
+          </div>
+          <div className="mock gh lp-protect">
+            <p className="mock-kicker">GitHub · Proposed change #3</p>
+            <p className="mock-headline">Checkout: show PayPal the total from the cart page</p>
+            <div className="gh-check bad">
+              <span className="gh-dot">✕</span>
+              <div>
+                <strong>PayPal checkout</strong>
+                <div className="mock-meta">7 of 9 sandbox scenarios passed</div>
+              </div>
+            </div>
+            <div className="gh-comment">
+              <strong>PayPal Checkout Integrator</strong>
+              <p>
+                A shopper could pay <mark>one cent for a $129 order</mark>, so this change should not be accepted yet. Ask the person who made it to let the store set the price.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="section" id="who">
-        <h2>Who it&apos;s for</h2>
-        <div className="grid-2">
-          <div className="item best">
-            <h3>A good fit</h3>
-            <ul className="plain-list">
-              <li>Your store&apos;s code is on GitHub (built by a developer, agency, or AI builder).</li>
-              <li>You take card payments with Stripe and want to offer PayPal too.</li>
-              <li>Today we support stores built with Next.js and Prisma. More are coming.</li>
-            </ul>
+      {/* Who it's for ---------------------------------------------------- */}
+      <section className="lp-section" id="who">
+        <p className="kicker">Who it&apos;s for</p>
+        <h2 className="lp-h2">Made for store owners, with a Developer view for the technical folks</h2>
+        <div className="lp-cards">
+          <div className="lp-card best">
+            <Icon name="bag" />
+            <h3>Store owners</h3>
+            <p>Plain English throughout: what we&apos;ll change, what your shoppers will see, and what to do next. No jargon, no code.</p>
           </div>
-          <div className="item">
-            <h3>Not needed</h3>
-            <ul className="plain-list">
-              <li>Shopify, Wix, Squarespace, and similar: PayPal is already a setting there.</li>
-            </ul>
-            <p className="small muted">Developers can switch to the Developer view at any time for the full technical detail: plans, file changes, test evidence, and logs.</p>
+          <div className="lp-card">
+            <Icon name="github" />
+            <h3>Agencies and freelancers</h3>
+            <p>Add PayPal to client stores in an afternoon, with a test report you can hand the client as proof.</p>
+          </div>
+          <div className="lp-card">
+            <Icon name="spark" />
+            <h3>Developers</h3>
+            <p>Switch to the Developer view for the plan, every changed file, the test evidence, and live logs. Built on PayPal&apos;s official SDKs.</p>
           </div>
         </div>
       </section>
-    </>
+
+      {/* FAQ --------------------------------------------------------------- */}
+      <section className="lp-section">
+        <p className="kicker">Questions</p>
+        <h2 className="lp-h2">Good questions, straight answers</h2>
+        <div className="faq">
+          {FAQ.map(([q, a]) => (
+            <details key={q}>
+              <summary>{q}</summary>
+              <p>{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* Closing CTA ------------------------------------------------------- */}
+      <section className="lp-cta">
+        <h2>Ready to offer PayPal?</h2>
+        <p>Connect your store and see the plan in a few minutes. Nothing changes until you approve it.</p>
+        <a className="btn btn-lg btn-light" href="/api/auth/login">
+          <Icon name="github" size={18} /> Start free with GitHub
+        </a>
+        <p className="lp-cta-small">Built with PayPal&apos;s official SDKs, APIMatic, and Claude. A Chui Labs product.</p>
+      </section>
+    </div>
   );
 }
