@@ -27,3 +27,6 @@ playwright/.cache/
 Thumbs.db
 
 .vscode/
+
+# local worktrees (e.g. the PayPal reference branch)
+.worktrees/
