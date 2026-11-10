@@ -32,7 +32,7 @@ Thumbs.db
 .worktrees/
 
 # harness run evidence (videos, traces, results)
-runs/
+/runs/
 
 # agent run artifacts (transcripts, plans, attempts)
-agent-runs/
+/agent-runs/
