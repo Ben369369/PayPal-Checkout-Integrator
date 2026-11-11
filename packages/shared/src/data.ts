@@ -306,3 +306,14 @@ export async function deleteSession(id: string) {
 }
 
 export const sessionToken = (s: Session) => decrypt(s.token_enc);
+
+/* Worker heartbeat ------------------------------------------------------ */
+export async function workerBeat() {
+  await q(`INSERT INTO worker_heartbeat (id, seen_at) VALUES (1, now()) ON CONFLICT (id) DO UPDATE SET seen_at = now()`);
+}
+
+/** Whether the worker checked in within the last few minutes. */
+export async function workerStatus(maxAgeSeconds = 180): Promise<{ online: boolean; seenAt: Date | null }> {
+  const row = await one<{ seen_at: Date; age: number }>(`SELECT seen_at, EXTRACT(EPOCH FROM now() - seen_at)::float AS age FROM worker_heartbeat WHERE id = 1`);
+  return { online: !!row && row.age <= maxAgeSeconds, seenAt: row?.seen_at ?? null };
+}

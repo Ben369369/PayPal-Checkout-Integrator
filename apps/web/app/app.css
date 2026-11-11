@@ -201,3 +201,29 @@ details.more summary { cursor: pointer; font-weight: 600; color: var(--navy-7); 
   dl.details { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
   dl.details dd { margin-bottom: 8px; overflow-wrap: anywhere; }
 }
+
+/* Worker offline notice (signed-in pages) */
+.robot-banner { background: var(--orange-0); border-bottom: 1px solid #f5d9a8; }
+.robot-banner-inner { max-width: 1080px; margin: 0 auto; padding: 10px 24px; display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: #6b3d00; }
+.robot-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--orange); display: inline-block; }
+
+/* Landing: proof panel for judges and first-time visitors */
+.lp-proof-panel { margin: 8px 0 56px; }
+.lp-proof-head { display: flex; justify-content: space-between; align-items: end; gap: 16px 32px; flex-wrap: wrap; }
+.lp-proof-head .lp-h2 { margin-bottom: 0; }
+.robot-status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); margin: 0; }
+.robot-status.on .robot-dot { background: var(--gh-green); box-shadow: 0 0 0 0 rgba(31, 136, 61, 0.4); animation: robot-pulse 2s ease-out infinite; }
+@keyframes robot-pulse { to { box-shadow: 0 0 0 8px rgba(31, 136, 61, 0); } }
+.lp-proof-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+.lp-proof-card {
+  display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 1px solid var(--navy-1); border-radius: 12px; background: #fff; color: var(--text);
+  text-decoration: none; box-shadow: 0 1px 2px rgba(27, 42, 94, 0.04), 0 10px 30px rgba(27, 42, 94, 0.06); transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.lp-proof-card:hover { transform: translateY(-3px); border-color: var(--navy-3); box-shadow: 0 2px 4px rgba(27, 42, 94, 0.05), 0 18px 44px rgba(27, 42, 94, 0.12); }
+.lp-proof-card strong { font-family: var(--serif); font-size: 19px; color: var(--ink); }
+.lp-proof-icon { width: 42px; height: 42px; border-radius: 10px; display: grid; place-items: center; background: var(--navy-0); color: var(--ink); }
+.lp-proof-text { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+.lp-proof-cta { margin-top: auto; padding-top: 6px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--navy-7); }
+@media (max-width: 900px) { .lp-proof-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .lp-proof-cards { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .robot-status.on .robot-dot { animation: none; } .lp-proof-card { transition: none; } }

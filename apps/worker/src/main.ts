@@ -5,7 +5,7 @@ import { config } from "dotenv";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 config({ path: [path.join(ROOT, ".env.local"), path.join(ROOT, ".env")], quiet: true });
 
-const { migrate, queue, QUEUES } = await import("@paypal-checkout-integrator/shared");
+const { migrate, queue, QUEUES, workerBeat } = await import("@paypal-checkout-integrator/shared");
 const { addPaypalJob, checkJob } = await import("./jobs.js");
 
 await migrate();
@@ -18,6 +18,11 @@ await boss.work<{ runId: string }>(QUEUES.addPaypal, { localConcurrency: 1, poll
 await boss.work<{ runId: string }>(QUEUES.check, { localConcurrency: 1, pollingIntervalSeconds: 2 }, async ([job]) => {
   await checkJob(job.data.runId);
 });
+
+// Tell the web app we're online (it shows an "offline" notice when this goes stale).
+const beat = () => workerBeat().catch((e) => console.error("heartbeat failed:", e instanceof Error ? e.message : e));
+void beat();
+setInterval(beat, 60 * 1000);
 
 // Free Render web services sleep when idle; GitHub and PayPal webhooks need it awake.
 const publicUrl = process.env.PUBLIC_URL?.replace(/\/$/, "");

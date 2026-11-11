@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChuiLogo } from "@/components/Brand";
 import { Nav, ViewToggle, type NavItem } from "@/components/Nav";
+import { workerStatus } from "@paypal-checkout-integrator/shared";
 import { currentUser, isOperator } from "@/lib/auth";
 import { currentView } from "@/lib/view";
 import "./globals.css";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [user, view] = await Promise.all([currentUser().catch(() => null), currentView()]);
-  const operator = await isOperator(user).catch(() => false);
+  const [operator, robot] = await Promise.all([isOperator(user).catch(() => false), user ? workerStatus().catch(() => null) : Promise.resolve(null)]);
   const items: NavItem[] = user
     ? [{ href: "/", label: "My stores" }, ...(view === "developer" ? [{ href: "/runs", label: "All runs" }] : []), ...(operator ? [{ href: "/setup", label: "Setup" }] : [])]
     : [{ href: "/#how", label: "How it works" }, { href: "/#who", label: "Who it's for" }];
@@ -62,6 +63,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </div>
           </div>
         </header>
+        {robot && !robot.online && (
+          <div className="robot-banner" role="status">
+            <div className="robot-banner-inner">
+              <span className="robot-dot" aria-hidden />
+              <span>
+                <strong>Our test robot is taking a break.</strong> New requests wait in line and start on their own when it&apos;s back. Finished results and reports work as usual.
+              </span>
+            </div>
+          </div>
+        )}
         <main className="page">{children}</main>
         <footer className="footer">PayPal Checkout Integrator by Chui Labs. Uses PayPal&apos;s test mode (sandbox): no real money moves.</footer>
       </body>

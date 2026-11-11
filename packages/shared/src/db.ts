@@ -167,6 +167,11 @@ const MIGRATIONS: string[] = [
      created_at timestamptz NOT NULL DEFAULT now(),
      expires_at timestamptz NOT NULL
    )`,
+  // The worker checks in every minute so the web app can tell people when it's offline.
+  `CREATE TABLE IF NOT EXISTS worker_heartbeat (
+     id int PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+     seen_at timestamptz NOT NULL
+   )`,
 ];
 
 /** Idempotent schema setup; safe to run on every boot of web and worker. */

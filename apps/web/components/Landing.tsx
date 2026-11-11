@@ -1,6 +1,6 @@
 import { HeroDemo } from "./landing/HeroDemo";
 import { HowItWorks } from "./landing/HowItWorks";
-import { Icon } from "./landing/Icons";
+import { Icon, type IconName } from "./landing/Icons";
 import { ScenarioGrid } from "./landing/ScenarioGrid";
 
 const FAQ = [
@@ -12,7 +12,63 @@ const FAQ = [
 ];
 
 /** Public front page for store owners (signed out). */
-export function Landing({ reportUrl, videoUrl, error }: { reportUrl: string | null; videoUrl: string | null; error?: string }) {
+export const SOURCE_URL = "https://github.com/Ben369369/PayPal-Checkout-Integrator";
+
+type LandingProps = {
+  reportUrl: string | null;
+  videoUrl: string | null;
+  prUrl: string | null;
+  caughtReportUrl: string | null;
+  caughtPrUrl: string | null;
+  robotOnline: boolean;
+  error?: string;
+};
+
+/** "See it working in 60 seconds": direct links to real evidence, no install needed. */
+function ProofPanel({ reportUrl, prUrl, caughtReportUrl, caughtPrUrl, robotOnline }: Omit<LandingProps, "videoUrl" | "error">) {
+  const cards: { icon: IconName; title: string; text: string; href: string | null; cta: string }[] = [
+    { icon: "receipt", title: "A real test report", text: "Nine test purchases, PayPal's own record of each one, the video, and Stripe side by side.", href: reportUrl, cta: "Open the report" },
+    { icon: "github", title: "The change it handed over", text: "The pull request it opened on our demo store, with the green PayPal checkout check.", href: prUrl, cta: "Open on GitHub" },
+    { icon: "shield", title: "A bug it caught", text: "A later change would have let a shopper pay one cent for $129. The check went red and explained why.", href: caughtPrUrl ?? caughtReportUrl, cta: "See the red check" },
+    { icon: "code", title: "The source code", text: "Open source: the agent, the test robot, the GitHub App, and this site.", href: SOURCE_URL, cta: "View on GitHub" },
+  ];
+  return (
+    <section className="lp-proof-panel" id="proof">
+      <div className="lp-proof-head">
+        <div>
+          <p className="kicker">See it working in 60 seconds</p>
+          <h2 className="lp-h2">Real evidence, no install needed</h2>
+        </div>
+        <p className={`robot-status${robotOnline ? " on" : ""}`}>
+          <span className="robot-dot" aria-hidden /> Test robot {robotOnline ? "online now" : "offline right now (requests wait in line)"}
+        </p>
+      </div>
+      <div className="lp-proof-cards">
+        {cards.map((c) =>
+          c.href ? (
+            <a key={c.title} className="lp-proof-card" href={c.href}>
+              <span className="lp-proof-icon">
+                <Icon name={c.icon} size={22} />
+              </span>
+              <strong>{c.title}</strong>
+              <span className="lp-proof-text">{c.text}</span>
+              <span className="lp-proof-cta">
+                {c.cta} <Icon name="arrow" size={14} />
+              </span>
+            </a>
+          ) : null,
+        )}
+      </div>
+      {caughtReportUrl && caughtPrUrl && (
+        <p className="small muted" style={{ marginTop: 12 }}>
+          Prefer a plain page to GitHub? Here is the <a href={caughtReportUrl}>report for the caught bug</a>.
+        </p>
+      )}
+    </section>
+  );
+}
+
+export function Landing({ reportUrl, videoUrl, prUrl, caughtReportUrl, caughtPrUrl, robotOnline, error }: LandingProps) {
   return (
     <div className="landing">
       {/* Hero ------------------------------------------------------------ */}
@@ -49,6 +105,8 @@ export function Landing({ reportUrl, videoUrl, error }: { reportUrl: string | nu
         </div>
         <HeroDemo />
       </section>
+
+      <ProofPanel reportUrl={reportUrl} prUrl={prUrl} caughtReportUrl={caughtReportUrl} caughtPrUrl={caughtPrUrl} robotOnline={robotOnline} />
 
       {/* Numbers --------------------------------------------------------- */}
       <section className="lp-stats">

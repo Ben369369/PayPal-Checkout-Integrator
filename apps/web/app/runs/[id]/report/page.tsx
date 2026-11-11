@@ -268,7 +268,16 @@ export default async function ReportPage({ params }: PageProps<"/runs/[id]/repor
           <dl className="details" style={{ marginTop: 16 }}>
             <dt>Attempts</dt>
             <dd>
-              {attempts.length} {attempts.length === 1 ? "(passed on the first try)" : `(${attempts.filter((a) => a.failing_check).length} caught by checks, then repaired)`}
+              {(() => {
+                const repaired = attempts.filter((a) => a.repair).length;
+                const retried = attempts.filter((a) => a.failing_check && !a.repair).length;
+                if (attempts.length === 1) return "1 (passed on the first try)";
+                const parts = [
+                  repaired ? `${repaired} repaired by the agent after the checks caught a problem` : "no code repairs needed",
+                  retried ? `${retried} re-run after a test-machine hiccup (${attempts.find((a) => a.failing_check && !a.repair)?.failing_check}), with no code changes` : null,
+                ].filter(Boolean);
+                return `${attempts.length} (${parts.join("; ")})`;
+              })()}
             </dd>
             <dt>Guards</dt>
             <dd>SDK methods verified against installed types · only planned files changed · Stripe files untouched · no secrets in the diff</dd>

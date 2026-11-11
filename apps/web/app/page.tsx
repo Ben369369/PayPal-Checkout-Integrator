@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getGithubApp, getSandboxSettings, listRuns, one } from "@paypal-checkout-integrator/shared";
+import { getGithubApp, getSandboxSettings, listRuns, one, workerStatus } from "@paypal-checkout-integrator/shared";
 import { Landing } from "@/components/Landing";
 import { Badge, ScoreRing, StoreMock } from "@/components/app/Visuals";
 import { Icon } from "@/components/landing/Icons";
@@ -17,14 +17,26 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const { error } = await searchParams;
   const user = await currentUser();
   if (!user) {
-    const featured = await one<{ id: string; video_url: string | null }>(
-      `SELECT r.id, s.video_url FROM runs r LEFT JOIN scenario_results s ON s.run_id = r.id AND s.scenario = 1
-       WHERE r.kind = 'add_paypal' AND r.status = 'passed' ORDER BY r.finished_at DESC LIMIT 1`,
-    );
+    const [featured, caught, robot] = await Promise.all([
+      one<{ id: string; video_url: string | null; pr_url: string | null }>(
+        `SELECT r.id, r.pr_url, s.video_url FROM runs r LEFT JOIN scenario_results s ON s.run_id = r.id AND s.scenario = 1
+         WHERE r.kind = 'add_paypal' AND r.status = 'passed' ORDER BY r.finished_at DESC LIMIT 1`,
+      ),
+      one<{ id: string; pr_url: string | null }>(
+        `SELECT r.id, COALESCE(r.pr_url, 'https://github.com/' || i.repo_full_name || '/pull/' || r.pr_number) AS pr_url
+         FROM runs r JOIN installations i ON i.id = r.installation_id
+         WHERE r.kind = 'check' AND r.status = 'failed' AND r.pr_number IS NOT NULL ORDER BY r.finished_at DESC LIMIT 1`,
+      ),
+      workerStatus().catch(() => null),
+    ]);
     return (
       <Landing
         reportUrl={featured ? `/runs/${featured.id}/report` : null}
         videoUrl={featured?.video_url ?? null}
+        prUrl={featured?.pr_url ?? null}
+        caughtReportUrl={caught ? `/runs/${caught.id}/report` : null}
+        caughtPrUrl={caught?.pr_url ?? null}
+        robotOnline={robot?.online ?? false}
         error={typeof error === "string" ? error : undefined}
       />
     );
