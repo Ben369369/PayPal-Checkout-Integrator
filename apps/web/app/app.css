@@ -15,16 +15,12 @@ body:has(.landing) { background-color: #fff; }
 }
 .page .section, .store-grid, .tracker, .steps > li { position: relative; }
 
-/* Landing hero: full-width brand-navy band with light doodles; the seller photo sits behind the product preview */
+/* Landing hero: full-width photo band (Lower Manhattan, recoloured to brand navy; public/bg/nyc-navy.webp) */
 html, body { overflow-x: clip; }
 .lp-hero { position: relative; isolation: isolate; padding: 76px 0 104px; }
 .lp-hero::before, .lp-hero::after { content: ""; position: absolute; z-index: -1; top: -40px; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); }
-.lp-hero::before { background: var(--ink) url("/bg/doodles-light.svg") 0 0 / 360px 360px repeat; }
-.lp-hero::after { display: none; }
-.lp-hero .demo { grid-template-areas: "photo photo" "browser checks"; }
-.demo-photo { grid-area: photo; display: block; width: 100%; height: 290px; object-fit: cover; object-position: 48% 30%; border-radius: 14px; margin-bottom: -96px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.25); }
-.lp-hero .browser { grid-area: browser; position: relative; z-index: 1; margin-left: -24px; }
-.lp-hero .checks-card { grid-area: checks; }
+.lp-hero::before { background: #0b1330 url("/bg/nyc-navy.webp") center 38% / cover no-repeat; }
+.lp-hero::after { background: rgba(11, 19, 48, 0.5); }
 .lp-hero h1 { color: #fff; }
 .lp-hero .kicker { color: var(--navy-1); }
 .lp-hero .lp-sub { color: #e6eaf5; }
@@ -37,15 +33,10 @@ html, body { overflow-x: clip; }
 .lp-hero .fail { color: #ffc2c2; }
 .lp-hero .browser, .lp-hero .checks-card { box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35); border-color: rgba(255, 255, 255, 0.4); }
 .lp-proof-panel { margin-top: 64px; }
-@media (max-width: 900px) {
-  .lp-hero { padding: 48px 0 64px; }
-  .lp-hero .demo { grid-template-areas: "photo" "browser" "checks"; }
-  .demo-photo { height: 270px; margin-bottom: -44px; object-position: 52% 22%; }
-  .lp-hero .browser { margin: 0 12px; }
-}
+@media (max-width: 900px) { .lp-hero { padding: 48px 0 64px; } }
 
-/* Closing call to action over the seller photo, recoloured to brand navy */
-.lp-cta { position: relative; isolation: isolate; overflow: hidden; background: #0b1330 url("/bg/seller-navy.webp") center 40% / cover no-repeat; }
+/* Closing call to action over the same photo */
+.lp-cta { position: relative; isolation: isolate; overflow: hidden; background: #0b1330 url("/bg/nyc-navy.webp") center 62% / cover no-repeat; }
 .lp-cta::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(27, 42, 94, 0.62); }
 .lp-cta-small a { color: var(--navy-1); }
 .ring::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: #fff; }
