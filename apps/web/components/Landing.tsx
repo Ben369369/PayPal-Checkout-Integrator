@@ -244,8 +244,8 @@ export function Landing({ reportUrl, videoUrl, prUrl, caughtReportUrl, caughtPrU
           <Icon name="github" size={18} /> Start free with GitHub
         </a>
         <p className="lp-cta-small">
-          Built with PayPal&apos;s official SDKs, APIMatic, and Claude. A Chui Labs product. Lower Manhattan photo via{" "}
-          <a href="https://unsplash.com/photos/aerial-photography-of-buildings-near-sea-Ab-W3gen18Q">Unsplash</a>.
+          Built with PayPal&apos;s official SDKs, APIMatic, and Claude. A Chui Labs product. Photo via{" "}
+          <a href="https://unsplash.com/photos/a-woman-standing-next-to-a-cardboard-box-on-top-of-a-table-V5XaBkW6PO8">Unsplash</a>.
         </p>
       </section>
     </div>

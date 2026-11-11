@@ -37,6 +37,9 @@ export function HeroDemo() {
 
   return (
     <div className="demo" aria-label="Preview: PayPal is added to a store's cart and tested with nine test purchases">
+      {/* Photo by Unsplash (free under the Unsplash License): a small online seller packing an order. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="demo-photo" src="/bg/seller.webp" alt="A small online store owner packing an order next to her laptop" width={1400} height={885} />
       <div className="browser">
         <div className="browser-bar">
           <span />
