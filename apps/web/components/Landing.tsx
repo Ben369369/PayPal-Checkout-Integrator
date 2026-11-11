@@ -243,7 +243,10 @@ export function Landing({ reportUrl, videoUrl, prUrl, caughtReportUrl, caughtPrU
         <a className="btn btn-lg btn-light" href="/api/auth/login">
           <Icon name="github" size={18} /> Start free with GitHub
         </a>
-        <p className="lp-cta-small">Built with PayPal&apos;s official SDKs, APIMatic, and Claude. A Chui Labs product.</p>
+        <p className="lp-cta-small">
+          Built with PayPal&apos;s official SDKs, APIMatic, and Claude. A Chui Labs product. Lower Manhattan photo via{" "}
+          <a href="https://unsplash.com/photos/aerial-photography-of-buildings-near-sea-Ab-W3gen18Q">Unsplash</a>.
+        </p>
       </section>
     </div>
   );
